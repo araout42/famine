@@ -10,4 +10,5 @@ _start:                                         ;tell linker entry point
 	jmp 0x1050
 
 msg     db  '....WOODY....',0xa                 ;our dear string
-len     equ $ - msg                             ;length of our dear string
+len     equ $ - msg								;length of our dear string
+signature db 'Famine version 99.0 (c)oded by <araout>', 0xa
