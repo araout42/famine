@@ -33,7 +33,7 @@
 
 
 ; Famine
-%define VIRUS_SIZE			(_finish - _start)
+%define FAMINE_SIZE			(_end - _start)
 %define STACK(x)			[(rbp - famine_size) + x]
 %define	DIRENT_ARR_SIZE		1024
 
