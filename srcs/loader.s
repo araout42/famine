@@ -1,4 +1,4 @@
-%include "./header.s"
+%include "includes/header.s"
 
 global      _start                              ;must be declared for linker (ld)
 
