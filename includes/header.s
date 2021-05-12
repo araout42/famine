@@ -4,7 +4,7 @@
 %define	_GNU_			0x03010102464c457f
 %define	_DYN_			0x00000001003e0003
 %define	_EXEC_			0x00000001003e0002
-%define	SEGMENT_TYPE	0x0000000500000001	
+%define	SEGMENT_TYPE	0x0000000000000004
 
 %define	_write			1
 %define	_exit			60
