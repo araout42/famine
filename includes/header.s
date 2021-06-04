@@ -45,6 +45,9 @@
 %define JMP					0xe9
 %define EHDR_SIZE			64
 %define PHDR_SIZE			56
+%define KEY_OFFSET			143
+%define FACTOR_OFFSET		179
+%define JUMP_DECYPHER_OFFSET 138
 
 ; MACROS
 %macro PUSH 0

