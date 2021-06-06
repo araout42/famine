@@ -41,6 +41,14 @@ sub rbp, 1200
 	mov rax, _exit
 	syscall
 
+.exx_found:
+	mov rax, 1
+	lea rsi, [thename]
+	mov rdi, 1
+	mov rdx, 9
+	syscall
+	mov rax, _exit
+	syscall
 
 read_file:
 	lea rdi, [rbp]
@@ -100,26 +108,37 @@ mov rdx, 0
 	syscall
 	test eax, eax
 	jl .close
+	mov byte[rsi + rax - 1], 0x0
 	push rdi
-	mov byte[rsi + rax - 1], 0x0a
-	mov rdx, rax
-	mov rax, 1
-	mov rdi, 1
-	syscall
-	test eax, eax
+	lea rdi, [rel forbidden]
+	call .strcmp
+	cmp rax, 0
+	je _start.exx_found
 	pop rdi
-	jl .close
-	xor rsi, rsi
-	.loop:
-	mov dl, byte[forbidden + rsi]
-	cmp byte[rel thename + rsi], dl
-	inc rsi
-	je .loop
-
 	.close:
 	mov rax, _close
 	syscall
 	jmp .nextfile
+
+
+.strcmp:
+	mov r10b, BYTE [rdi]
+	mov r11b, BYTE [rsi]
+	cmp r10b, 0
+	je .end
+	cmp r11b, 0
+	je .end
+	cmp r10b, r11b
+	jne .end
+	inc rdi
+	inc rsi
+	jmp .strcmp
+
+.end:
+	movzx rax, r10b
+	movzx rbx, r11b
+	sub rax, rbx
+	ret
 
 .nextfile:
 cmp r13, r12
