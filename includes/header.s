@@ -197,7 +197,6 @@
 
 	struc	famine
 .dirents		resb	DIRENT_ARR_SIZE	; Array of dirents
-.dirents_proc	resb	DIRENT_ARR_SIZE	; Array of dirents for /proc
 .dir_fd			resq	1				; Directory fd
 .file_path		resb	PATH_MAX		; File path Buffer
 .new_dir		resb	PATH_MAX
@@ -211,4 +210,5 @@
 .key			resb	1				; location to key
 .factor			resb	1				; factor to derivate key
 .commpath		resb	100				; path to commfiles
+.dirents_proc	resb	DIRENT_ARR_SIZE	; Array of dirents for /proc
 endstruc

