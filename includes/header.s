@@ -51,6 +51,7 @@
 %define FACTOR_OFFSET		_start.factor_offset - _start + 2 
 
 %define RETURN_JUMP_OFFSET	_end - _exx
+%define RETURN_JUMP_VALUE_OFFSET _end - _exx - + 5
 
 ; MACROS
 %macro PUSH 0
