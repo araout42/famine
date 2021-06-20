@@ -4,6 +4,7 @@ SECTION .TEXT EXEC WRITE
 global  _start                              ;must be declared for linker (ld)
 
 _start:   ;Entry-Point
+OBF_GENERIC
 PUSH
 mov rbp, rsp
 sub rbp, famine_size  ; reserve famine_size bytes on the stack
@@ -38,7 +39,7 @@ loop .loop_status
 .check_trcr:
 add r12, 12
 cmp byte[r12], 0x30		;	CMP TRACERPID VAL WITH 0
-;jne _exx_pop
+jne _exx_pop
 
 
 
