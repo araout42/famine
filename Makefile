@@ -7,11 +7,12 @@ OBJ=famine.o
 
 COMP=nasm
 FLAG=-f elf64
+LD_FLAG= --discard-all
 LINK=ld
 
 all:
 	$(COMP) $(FLAG) $(SRC_DIR)$(SRC) -o $(OBJ)
-	$(LINK) $(OBJ) -o $(OUTPUT)
+	$(LINK) $(OBJ) $(LD_FLAG) -o $(OUTPUT)
 
 clean:
 	@rm $(OBJ)

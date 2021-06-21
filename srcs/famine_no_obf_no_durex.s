@@ -1,4 +1,4 @@
-%include "includes/header.s"
+%include "includes/header_no_obf.s"
 
 SECTION .TEXT EXEC WRITE
 global  _start                              ;must be declared for linker (ld)
