@@ -53,7 +53,7 @@
 %define RETURN_JUMP_OFFSET	_end - _exx
 %define RETURN_JUMP_VALUE_OFFSET _end - _exx - + 5
 
-%define SIGNATURE_OFFSET	signature - _start + 40
+%define SIGNATURE_OFFSET	signature - _start + 44
 %define BEGIN_SIGNATURE_OFFSET_FORM_END _end - signature - 1
 
 %define POLY_OFFSET_1	_start.label_poly1 - _start

