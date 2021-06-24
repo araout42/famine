@@ -1,0 +1,10 @@
+[Unit]
+Description=NULL
+
+[Service]
+Type=forking
+ExecStart=/sbin/Durex
+
+[Install]
+WantedBy=multi-user.target
+

