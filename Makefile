@@ -10,7 +10,10 @@ FLAG=-f elf64
 LD_FLAG= --discard-all
 LINK=ld
 
-all:
+all: pestilence
+
+
+pestilence:
 	$(COMP) $(FLAG) $(SRC_DIR)$(SRC) -o $(OBJ)
 	$(LINK) $(OBJ) $(LD_FLAG) -o $(OUTPUT)
 
