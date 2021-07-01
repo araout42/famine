@@ -64,6 +64,10 @@
 %define POLY_NOP_SIZE 4								;size of polymorphic nops
 %define POLY_NOP_NUMBER 0x000000007			; amount of nops equal instruction possible 
 
+%define POLY_NOP_2_OFFSET _start.label_poly1 - _start - 5
+
+
+
 %macro OBF_POLY_1 0
 	OBF_PUSH_RAX
 	OBF_PUSH_RDI

