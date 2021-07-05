@@ -64,6 +64,12 @@
 %define POLY_NOP_SIZE 4								;size of polymorphic nops
 %define POLY_NOP_NUMBER 0x000000007			; amount of nops equal instruction possible 
 
+%define POLY_XOR_R10_1_OFFSET _start.poly_xor_r10_1 - _start
+
+%define POLY_XOR_SIZE 6				;size of poly xor
+%define POLY_XOR_NUMBER 0x000000005 ;nbx of polyxor posssible 
+
+
 %macro OBF_POLY_1 0
 	OBF_PUSH_RAX
 	OBF_PUSH_RDI
@@ -78,26 +84,6 @@
 	mov rbx, 0x00000000
 	mov dword[rax+12], ebx
 	pop rax
-%endmacro
-
-%macro immediate_nop_poly_1 0
-	add r10 , 0
-%endmacro
-
-%macro immediate_nop_poly_2 0
-	or rax, 0
-%endmacro
-
-%macro immediate_nop_poly_3 0
-	and rbx, -1
-%endmacro
-
-%macro immediate_nop_poly_4 0
-	mov rsp, rsp
-%endmacro
-
-%macro immediate_nop_poly_5 0
-	and qword[rsp], -1
 %endmacro
 
 

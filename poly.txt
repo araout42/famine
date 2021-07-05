@@ -1,0 +1,6 @@
+41ba00000000   mov r10d, 0
+4983e200       and r10, 0
+4d29d2         sub r10, r10
+4d31d2         xor r10, r10
+41ba01000000   mov r10d, 1
+4983ea01       sub r10, 1                
