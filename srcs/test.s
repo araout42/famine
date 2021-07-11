@@ -3,26 +3,23 @@ section .text
 global _start
 
 _start:
+						add rax, 150
+						push rax
+						pop rax
+		dd 0x90909090
+						mov rax, 0xFF
+		dd 0x90909090
+						sub rax, r11
+		dd 0x90909090
+						xor rax, rcx
+		dd 0x90909090
+
+
+		dd 0x90909090
+
+
+
 		dd 0x90909090
 
 		dd 0x90909090
 
-		dd 0x90909090
-
-		push 0
-		pop rdi
-		dd 0x90909090
-
-		and rdi, 0
-
-		dd 0x90909090
-
-
-		sub rdi, rdi
-
-		dd 0x90909090
-		xor rdi, rdi
-
-		dd 0x90909090
-
-		mov rdi, 0

