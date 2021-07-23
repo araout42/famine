@@ -69,6 +69,7 @@
 %define POLY_NOP_7_OFFSET poly_xor_r11_r11.poly_nop_7 - _start
 %define POLY_NOP_8_OFFSET poly_xor_r11_r11.poly_nop_8 - _start
 %define POLY_NOP_9_OFFSET poly_xor_r11_r11.poly_nop_9 - _start
+%define POLY_NOP_10_OFFSET _start.poly_nop_10 - _start
 
 
 
@@ -470,12 +471,15 @@ db 0xF3
 	.factor_offset:
 	mov r12, 0xAA
 	.decyphering:
+OBF_GENERIC
 		mov r11b, byte [rdx]
 		xor r11, rdi
 		mov byte [rdx], r11b
+OBF_GENERIC
 		inc rdx
 		dec r12
 		add rdi, r12
+OBF_GENERIC
 		loop .decyphering
 %endmacro
 ;Structures
